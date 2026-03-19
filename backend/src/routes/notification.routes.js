@@ -137,10 +137,19 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
   });
 
   res.status(201);
+  const sentNotifications   = notifications.filter((n) => n.status === "delivered");
+  const failedNotifications = notifications.filter((n) => n.status === "failed");
+
+  // Collect unique error messages for the Flutter client to display
+  const errors = [...new Set(
+    failedNotifications.map((n) => n.errorMessage).filter(Boolean)
+  )];
+
   ok(res, {
     total: notifications.length,
-    sent: notifications.filter((n) => n.status === "delivered").length,
-    failed: notifications.filter((n) => n.status === "failed").length,
+    sent: sentNotifications.length,
+    failed: failedNotifications.length,
+    errors,
   });
 }));
 

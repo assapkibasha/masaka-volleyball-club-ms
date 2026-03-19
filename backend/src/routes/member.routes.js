@@ -167,9 +167,14 @@ memberRouter.patch("/:memberId", asyncHandler(async (req, res) => {
     "avatarUrl",
   ];
 
+  const nullableStringFields = ["phone", "email", "gender", "team", "notes", "avatarUrl"];
+
   for (const field of allowedFields) {
     if (Object.prototype.hasOwnProperty.call(req.body, field)) {
-      member[field] = req.body[field];
+      const value = req.body[field];
+      // Convert empty strings to null for optional string fields so they don't
+      // break uniqueness checks or falsely appear as missing values.
+      member[field] = nullableStringFields.includes(field) && value === "" ? null : value;
     }
   }
 
