@@ -6,6 +6,7 @@ const { requireAuth } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async-handler");
 const { ok } = require("../utils/response");
 const { logAudit } = require("../services/audit-service");
+const { sendSms } = require("../services/sms-service");
 
 const notificationRouter = express.Router();
 
@@ -63,20 +64,84 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
   }
 
   const members = await Member.findAll({ where: { id: memberIds } });
-  const notifications = await Promise.all(members.map((member) => NotificationLog.create({
-    memberId: member.id,
-    createdByAdminId: req.user.id,
-    channel: channel || "system",
-    title,
-    message,
-    status: "delivered",
-    sentAt: new Date(),
-  })));
 
-  await logAudit(req.user.id, "notification.send", "notification", null, { count: notifications.length });
+  // Separate members with and without phone numbers
+  const withPhone    = members.filter((m) => m.phone);
+  const withoutPhone = members.filter((m) => !m.phone);
+
+  // Build a per-recipient status map from the BulkSMS response
+  const smsStatusMap = {}; // phone -> { status, messageId, errorMessage }
+
+  if (withPhone.length > 0) {
+    try {
+      const phones = withPhone.map((m) => m.phone);
+      const smsResult = await sendSms(phones, message);
+
+      // Map results back by phone number
+      for (const r of smsResult.results) {
+        const normalized = r.recipient.replace(/^\+/, "");
+        smsStatusMap[normalized] = {
+          status: r.status === "sent" ? "delivered" : "failed",
+          messageId: r.messageid,
+          errorMessage: r.status !== "sent" ? `BulkSMS status: ${r.status}` : null,
+        };
+      }
+    } catch (smsError) {
+      // If the whole SMS call fails, mark all phone-holders as failed
+      for (const m of withPhone) {
+        const normalized = (m.phone || "").replace(/\s+/g, "").replace(/^\+/, "");
+        smsStatusMap[normalized] = {
+          status: "failed",
+          messageId: null,
+          errorMessage: smsError.message,
+        };
+      }
+    }
+  }
+
+  // Create notification logs for all members
+  const now = new Date();
+  const notifications = await Promise.all(
+    members.map((member) => {
+      const normalized = (member.phone || "").replace(/\s+/g, "").replace(/^\+/, "");
+      const smsInfo = smsStatusMap[normalized];
+
+      let status = "delivered";
+      let errorMessage = null;
+
+      if (!member.phone) {
+        status = "failed";
+        errorMessage = "Member has no phone number on record.";
+      } else if (smsInfo) {
+        status = smsInfo.status;
+        errorMessage = smsInfo.errorMessage || null;
+      }
+
+      return NotificationLog.create({
+        memberId: member.id,
+        createdByAdminId: req.user.id,
+        channel: channel || "sms",
+        title,
+        message,
+        status,
+        sentAt: now,
+        errorMessage,
+      });
+    })
+  );
+
+  await logAudit(req.user.id, "notification.send", "notification", null, {
+    count: notifications.length,
+    sent: notifications.filter((n) => n.status === "delivered").length,
+    failed: notifications.filter((n) => n.status === "failed").length,
+  });
 
   res.status(201);
-  ok(res, notifications);
+  ok(res, {
+    total: notifications.length,
+    sent: notifications.filter((n) => n.status === "delivered").length,
+    failed: notifications.filter((n) => n.status === "failed").length,
+  });
 }));
 
 notificationRouter.post("/:notificationId/resend", asyncHandler(async (req, res) => {
