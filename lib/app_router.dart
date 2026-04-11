@@ -10,6 +10,7 @@ import 'features/finance/screens/contributions_screen.dart';
 import 'features/finance/screens/unpaid_members_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
 import 'features/reports/screens/reports_screen.dart';
+import 'features/messages/screens/messages_screen.dart';
 import 'features/settings/screens/settings_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -45,6 +46,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/unpaid-members', builder: (context, state) => const UnpaidMembersScreen()),
       GoRoute(path: '/notifications', builder: (context, state) => const NotificationsScreen()),
       GoRoute(path: '/reports', builder: (context, state) => const ReportsScreen()),
+      GoRoute(path: '/messages', builder: (context, state) => const MessagesScreen()),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
     ],
   );

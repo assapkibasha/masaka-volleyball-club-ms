@@ -41,6 +41,19 @@ async function sendSms(phones, message) {
     payload.sender = sender;
   }
 
+  console.log('--- BULKSMS DEBUG LOG ---');
+  console.log('Retrieved ENV variables:');
+  console.log('BULKSMS_URL: ', BULKSMS_URL);
+  console.log('BULKSMS_API_KEY: ', apiKey ? `${apiKey.substring(0, 5)}... (length: ${apiKey.length})` : 'UNDEFINED');
+  console.log('BULKSMS_USERNAME: ', username);
+  console.log('BULKSMS_PASSWORD: ', password ? `${password.substring(0, 3)}... (length: ${password.length})` : 'UNDEFINED');
+  console.log('BULKSMS_SENDER_ID: ', sender);
+  console.log('Final Payload being sent:');
+  console.log(payload);
+  console.log('URL encoded version: ', qs.stringify(payload));
+  console.log('---------------------------');
+
+
   // BulkSMS API requires application/x-www-form-urlencoded (not JSON)
   const response = await axios.post(BULKSMS_URL, qs.stringify(payload), {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

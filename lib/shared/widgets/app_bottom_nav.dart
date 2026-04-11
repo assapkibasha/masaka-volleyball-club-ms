@@ -24,7 +24,7 @@ class AppBottomNav extends StatelessWidget {
           _buildNavItem(context, Icons.dashboard, 'HOME', currentIndex == 0, '/dashboard'),
           _buildNavItem(context, Icons.account_balance_wallet_outlined, 'FINANCE', currentIndex == 1, '/contributions'),
           _buildNavItem(context, Icons.group_outlined, 'MEMBERS', currentIndex == 2, '/members'),
-          _buildNavItem(context, Icons.leaderboard_outlined, 'STATS', currentIndex == 3, '/reports'),
+          _buildNavItem(context, Icons.message_outlined, 'MESSAGES', currentIndex == 3, '/messages'),
           _buildNavItem(context, Icons.settings_outlined, 'SETTINGS', currentIndex == 4, '/settings'),
         ],
       ),

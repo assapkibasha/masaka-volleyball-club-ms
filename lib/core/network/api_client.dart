@@ -37,14 +37,14 @@ class ApiClient {
     }
 
     if (kIsWeb) {
-      return 'http://localhost:4000/api/v1';
+      return 'https://masaka-volleyball-club-ms.onrender.com/api/v1';
     }
 
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:4000/api/v1';
+      return 'https://masaka-volleyball-club-ms.onrender.com/api/v1';
     }
 
-    return 'http://localhost:4000/api/v1';
+    return 'https://masaka-volleyball-club-ms.onrender.com/api/v1';
   }
 
   final String baseUrl = defaultBaseUrl();
@@ -173,17 +173,36 @@ class ApiClient {
     required String title,
     required String message,
     String channel = 'sms',
-  }) {
-    return _post(
-      '/notifications/send',
-      token: token,
-      body: {
-        'memberIds': memberIds,
-        'channel': channel,
-        'title': title,
-        'message': message,
-      },
+  }) async {
+    final response = await _sendWithAuthRetry(
+      () => _client.post(
+        _buildUri('/notifications/send', null),
+        headers: _headers(_resolvedToken(token)),
+        body: jsonEncode({
+          'memberIds': memberIds,
+          'channel': channel,
+          'title': title,
+          'message': message,
+        }),
+      ),
     );
+
+    final body = _decode(response);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_extractErrorMessage(body), statusCode: response.statusCode);
+    }
+
+    // The production server returns { data: [ ...notifications ] }  (array)
+    // The updated local server returns { data: { total, sent, failed } } (map)
+    // Handle both gracefully.
+    final data = body['data'];
+    if (data is JsonMap) return data;
+    if (data is List) {
+      final sent = data.length;
+      return {'total': sent, 'sent': sent, 'failed': 0};
+    }
+    return {'total': 0, 'sent': 0, 'failed': 0};
   }
 
   Future<JsonMap> getYearlyReport(String token, int year) {

@@ -1,0 +1,10 @@
+{
+  "jsonResponse": {
+    "status": "error",
+    "message": "Missing authentication fields"
+  },
+  "formResponse": {
+    "status": "error",
+    "message": "Invalid API key or credentials"
+  }
+}
