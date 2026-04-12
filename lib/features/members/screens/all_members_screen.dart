@@ -19,7 +19,13 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
   String? _selectedRole;
   late Future<List<dynamic>> _future;
 
-  static const _roles = <String?>[null, 'Captain', 'Setter', 'Middle Blocker', 'Libero'];
+  static const _roles = <String?>[
+    null,
+    'Captain',
+    'Setter',
+    'Middle Blocker',
+    'Libero',
+  ];
 
   @override
   void initState() {
@@ -35,20 +41,35 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
 
   Future<List<dynamic>> _loadMembers() {
     final token = ref.read(authControllerProvider).token!;
-    return ref.read(apiClientProvider).getMembers(
+    return ref
+        .read(apiClientProvider)
+        .getMembers(
           token,
           search: _searchController.text.trim(),
           role: _selectedRole,
+          pageSize: 1000,
         );
   }
 
+  void _reloadMembers() {
+    final future = _loadMembers();
+    setState(() {
+      _future = future;
+    });
+  }
+
   Future<void> _refresh() async {
-    setState(() => _future = _loadMembers());
-    await _future;
+    final future = _loadMembers();
+    setState(() {
+      _future = future;
+    });
+    await future;
   }
 
   Future<void> _recordPayment(Map<String, dynamic> member) async {
-    final amountController = TextEditingController(text: '${member['monthlyContributionAmount'] ?? 0}');
+    final amountController = TextEditingController(
+      text: '${member['monthlyContributionAmount'] ?? 0}',
+    );
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -60,8 +81,14 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
           decoration: const InputDecoration(labelText: 'Amount paid'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -71,13 +98,12 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
     }
 
     try {
-      await ref.read(apiClientProvider).recordPayment(
-            ref.read(authControllerProvider).token!,
-            {
-              'memberId': member['id'],
-              'amountPaid': int.tryParse(amountController.text.trim()) ?? 0,
-            },
-          );
+      await ref
+          .read(apiClientProvider)
+          .recordPayment(ref.read(authControllerProvider).token!, {
+            'memberId': member['id'],
+            'amountPaid': int.tryParse(amountController.text.trim()) ?? 0,
+          });
 
       if (!mounted) {
         return;
@@ -92,9 +118,9 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
@@ -118,7 +144,10 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
-                      child: Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                      child: Text(
+                        snapshot.error.toString(),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   );
                 }
@@ -126,16 +155,25 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                 final members = snapshot.data ?? const [];
                 if (members.isEmpty) {
                   return const Center(
-                    child: Text('No members found.', style: TextStyle(color: AppColors.textSecondary)),
+                    child: Text(
+                      'No members found.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
                   );
                 }
 
                 return RefreshIndicator(
                   onRefresh: _refresh,
                   child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8).copyWith(bottom: 100),
-                    itemBuilder: (context, index) => _buildMemberCard(members[index] as Map<String, dynamic>),
-                    separatorBuilder: (context, index) => const SizedBox(height: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ).copyWith(bottom: 100),
+                    itemBuilder: (context, index) => _buildMemberCard(
+                      members[index] as Map<String, dynamic>,
+                    ),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 16),
                     itemCount: members.length,
                   ),
                 );
@@ -151,8 +189,14 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
           onPressed: () => context.push('/register-member'),
           backgroundColor: AppColors.primaryBlack,
           elevation: 4,
-          shape: const CircleBorder(side: BorderSide(color: AppColors.white, width: 4)),
-          child: const Icon(Icons.add, color: AppColors.primaryYellow, size: 28),
+          shape: const CircleBorder(
+            side: BorderSide(color: AppColors.white, width: 4),
+          ),
+          child: const Icon(
+            Icons.add,
+            color: AppColors.primaryYellow,
+            size: 28,
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -170,13 +214,21 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
       ),
       title: const Text(
         'MVCS',
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5, color: AppColors.primaryBlack),
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          letterSpacing: -0.5,
+          color: AppColors.primaryBlack,
+        ),
       ),
       centerTitle: true,
       actions: [
         IconButton(
           onPressed: () => context.go('/notifications'),
-          icon: const Icon(Icons.notifications_outlined, color: AppColors.primaryBlack),
+          icon: const Icon(
+            Icons.notifications_outlined,
+            color: AppColors.primaryBlack,
+          ),
         ),
       ],
       bottom: PreferredSize(
@@ -197,14 +249,24 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
+                  onChanged: (_) => _reloadMembers(),
                   onSubmitted: (_) => _refresh(),
                   decoration: InputDecoration(
-                    hintText: 'Search members...',
-                    hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                    hintText: 'Search by name, email, phone...',
+                    hintStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppColors.textSecondary,
+                    ),
                     filled: true,
                     fillColor: AppColors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                      horizontal: 16,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: AppColors.border),
@@ -224,7 +286,10 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: AppColors.textSecondary,
+                  ),
                   onPressed: _refresh,
                 ),
               ),
@@ -242,22 +307,35 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                     onTap: () {
                       setState(() {
                         _selectedRole = role;
-                        _future = _loadMembers();
                       });
+                      _reloadMembers();
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: isActive ? AppColors.primaryYellow : AppColors.white,
+                        color: isActive
+                            ? AppColors.primaryYellow
+                            : AppColors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isActive ? Colors.transparent : AppColors.border),
+                        border: Border.all(
+                          color: isActive
+                              ? Colors.transparent
+                              : AppColors.border,
+                        ),
                       ),
                       child: Text(
                         role ?? 'All Members',
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                          color: isActive ? AppColors.primaryBlack : AppColors.textSecondary,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isActive
+                              ? AppColors.primaryBlack
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -280,7 +358,13 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 1))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -294,7 +378,10 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                   backgroundColor: AppColors.backgroundLight,
                   child: Text(
                     _initials(member['fullName'] as String? ?? ''),
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -312,18 +399,34 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                               children: [
                                 Text(
                                   member['fullName'] as String? ?? 'Unknown',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                Text(member['role'] as String? ?? '-', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                Text(
+                                  member['role'] as String? ?? '-',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: (status == 'active' ? Colors.green : Colors.grey).withValues(alpha: 0.12),
+                              color:
+                                  (status == 'active'
+                                          ? Colors.green
+                                          : Colors.grey)
+                                      .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -331,7 +434,9 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: status == 'active' ? Colors.green.shade700 : Colors.grey.shade700,
+                                color: status == 'active'
+                                    ? Colors.green.shade700
+                                    : Colors.grey.shade700,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -341,12 +446,21 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Monthly: RWF $amount',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryBlack,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        member['email'] as String? ?? member['phone'] as String? ?? '-',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        member['email'] as String? ??
+                            member['phone'] as String? ??
+                            '-',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -363,7 +477,14 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Center(
-                      child: Text('View Profile', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                      child: Text(
+                        'View Profile',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -375,7 +496,14 @@ class _AllMembersScreenState extends ConsumerState<AllMembersScreen> {
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Center(
-                      child: Text('Record Payment', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primaryYellow)),
+                      child: Text(
+                        'Record Payment',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryYellow,
+                        ),
+                      ),
                     ),
                   ),
                 ),

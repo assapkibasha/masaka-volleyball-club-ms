@@ -43,11 +43,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settings = await api.getSettings(token);
     _admins = await api.getAdmins(token);
 
-    final general = settings['general'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final notifications = settings['notifications'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final general =
+        settings['general'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final notifications =
+        settings['notifications'] as Map<String, dynamic>? ??
+        <String, dynamic>{};
 
     _systemNameController.text = general['systemName'] as String? ?? '';
-    _monthlyContributionController.text = '${general['defaultMonthlyContribution'] ?? 0}';
+    _monthlyContributionController.text =
+        '${general['defaultMonthlyContribution'] ?? 0}';
     _currency = general['currency'] as String? ?? 'RWF';
     _autoReminders = notifications['autoReminders'] as bool? ?? true;
     _paymentNotify = notifications['paymentNotify'] as bool? ?? true;
@@ -55,41 +59,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
-    await _future;
+    final future = _load();
+    setState(() {
+      _future = future;
+    });
+    await future;
   }
 
   Future<void> _save() async {
     try {
       await ref.read(apiClientProvider).updateSettings(
-            ref.read(authControllerProvider).token!,
-            {
-              'general': {
-                'systemName': _systemNameController.text.trim(),
-                'defaultMonthlyContribution': int.tryParse(_monthlyContributionController.text.trim()) ?? 0,
-                'currency': _currency,
-              },
-              'notifications': {
-                'autoReminders': _autoReminders,
-                'paymentNotify': _paymentNotify,
-                'weeklyReports': _weeklyReports,
-              },
-            },
-          );
+        ref.read(authControllerProvider).token!,
+        {
+          'general': {
+            'systemName': _systemNameController.text.trim(),
+            'defaultMonthlyContribution':
+                int.tryParse(_monthlyContributionController.text.trim()) ?? 0,
+            'currency': _currency,
+          },
+          'notifications': {
+            'autoReminders': _autoReminders,
+            'paymentNotify': _paymentNotify,
+            'weeklyReports': _weeklyReports,
+          },
+        },
+      );
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Settings saved.')));
       await _refresh();
     } on ApiException catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
@@ -107,7 +117,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         title: const Text(
           'System Settings',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryBlack,
+          ),
         ),
         actions: [
           Padding(
@@ -118,12 +132,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 backgroundColor: AppColors.primaryYellow,
                 foregroundColor: AppColors.primaryBlack,
                 elevation: 1,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Save',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ],
@@ -143,7 +165,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                child: Text(
+                  snapshot.error.toString(),
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
@@ -167,21 +192,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              Expanded(child: _buildTextField('Monthly Contribution', _monthlyContributionController)),
+                              Expanded(
+                                child: _buildTextField(
+                                  'Monthly Contribution',
+                                  _monthlyContributionController,
+                                ),
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Currency', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                    const Text(
+                                      'Currency',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
                                     const SizedBox(height: 8),
                                     DropdownButtonFormField<String>(
                                       initialValue: _currency,
                                       decoration: _dropdownDecoration(),
                                       items: const [
-                                        DropdownMenuItem(value: 'RWF', child: Text('RWF')),
-                                        DropdownMenuItem(value: 'USD', child: Text('USD')),
-                                        DropdownMenuItem(value: 'KES', child: Text('KES')),
+                                        DropdownMenuItem(
+                                          value: 'RWF',
+                                          child: Text('RWF'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'USD',
+                                          child: Text('USD'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'KES',
+                                          child: Text('KES'),
+                                        ),
                                       ],
                                       onChanged: (value) {
                                         if (value != null) {
@@ -198,16 +244,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _buildSectionHeader(Icons.notifications, 'Notification Preferences'),
+                    _buildSectionHeader(
+                      Icons.notifications,
+                      'Notification Preferences',
+                    ),
                     const SizedBox(height: 12),
                     _buildSettingsCard(
                       child: Column(
                         children: [
-                          _buildToggleTile('Send automatic payment reminders', _autoReminders, (value) => setState(() => _autoReminders = value)),
+                          _buildToggleTile(
+                            'Send automatic payment reminders',
+                            _autoReminders,
+                            (value) => setState(() => _autoReminders = value),
+                          ),
                           const Divider(color: AppColors.divider, height: 1),
-                          _buildToggleTile('Notify on payment received', _paymentNotify, (value) => setState(() => _paymentNotify = value)),
+                          _buildToggleTile(
+                            'Notify on payment received',
+                            _paymentNotify,
+                            (value) => setState(() => _paymentNotify = value),
+                          ),
                           const Divider(color: AppColors.divider, height: 1),
-                          _buildToggleTile('Weekly summary reports', _weeklyReports, (value) => setState(() => _weeklyReports = value)),
+                          _buildToggleTile(
+                            'Weekly summary reports',
+                            _weeklyReports,
+                            (value) => setState(() => _weeklyReports = value),
+                          ),
                         ],
                       ),
                     ),
@@ -215,7 +276,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildSectionHeader(Icons.shield_outlined, 'Admin Management'),
+                        _buildSectionHeader(
+                          Icons.shield_outlined,
+                          'Admin Management',
+                        ),
                         ElevatedButton.icon(
                           onPressed: _refresh,
                           icon: const Icon(Icons.refresh, size: 16),
@@ -223,11 +287,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             backgroundColor: AppColors.primaryYellow,
                             foregroundColor: AppColors.primaryBlack,
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             minimumSize: Size.zero,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                           ),
-                          label: const Text('Reload', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          label: const Text(
+                            'Reload',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -241,13 +316,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: _admins.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.all(16),
-                              child: Text('No admins found.', style: TextStyle(color: AppColors.textSecondary)),
+                              child: Text(
+                                'No admins found.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             )
                           : Column(
                               children: [
-                                for (var index = 0; index < _admins.length; index++) ...[
-                                  _buildAdminTile(_admins[index] as Map<String, dynamic>),
-                                  if (index < _admins.length - 1) const Divider(height: 1, color: AppColors.divider, indent: 58),
+                                for (
+                                  var index = 0;
+                                  index < _admins.length;
+                                  index++
+                                ) ...[
+                                  _buildAdminTile(
+                                    _admins[index] as Map<String, dynamic>,
+                                  ),
+                                  if (index < _admins.length - 1)
+                                    const Divider(
+                                      height: 1,
+                                      color: AppColors.divider,
+                                      indent: 58,
+                                    ),
                                 ],
                               ],
                             ),
@@ -261,7 +352,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           const Text(
                             'Sign out of your account on this device. This will end your current session.',
-                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
@@ -272,30 +366,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   context: context,
                                   builder: (context) => AlertDialog(
                                     title: const Text('Logout'),
-                                    content: const Text('Are you sure you want to logout?'),
+                                    content: const Text(
+                                      'Are you sure you want to logout?',
+                                    ),
                                     actions: [
-                                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout', style: TextStyle(color: Colors.red))),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text(
+                                          'Logout',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
 
                                 if (confirm == true) {
                                   if (!mounted) return;
-                                  await ref.read(authControllerProvider).logout();
-                                  if (!mounted) return;
+                                  await ref
+                                      .read(authControllerProvider)
+                                      .logout();
+                                  if (!context.mounted) return;
                                   context.go('/login');
                                 }
                               },
                               icon: const Icon(Icons.logout),
-                              label: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+                              label: const Text(
+                                'Logout',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFFF5F5),
                                 foregroundColor: Colors.red,
                                 elevation: 0,
-                                side: const BorderSide(color: Color(0xFFFEB2B2)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                side: const BorderSide(
+                                  color: Color(0xFFFEB2B2),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                             ),
                           ),
@@ -318,11 +436,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: AppColors.primaryBlack, borderRadius: BorderRadius.circular(6)),
+          decoration: BoxDecoration(
+            color: AppColors.primaryBlack,
+            borderRadius: BorderRadius.circular(6),
+          ),
           child: Icon(icon, color: AppColors.primaryYellow, size: 16),
         ),
         const SizedBox(width: 10),
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryBlack)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryBlack,
+          ),
+        ),
       ],
     );
   }
@@ -343,7 +471,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 8),
         TextField(controller: controller, decoration: _dropdownDecoration()),
       ],
@@ -355,22 +490,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       filled: true,
       fillColor: AppColors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
     );
   }
 
-  Widget _buildToggleTile(String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildToggleTile(
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ),
           Switch(
             value: value,
             onChanged: onChanged,
-            thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppColors.primaryBlack : Colors.white),
-            trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppColors.primaryYellow : const Color(0xFFE2E8F0)),
+            thumbColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.selected)
+                  ? AppColors.primaryBlack
+                  : Colors.white,
+            ),
+            trackColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.selected)
+                  ? AppColors.primaryYellow
+                  : const Color(0xFFE2E8F0),
+            ),
           ),
         ],
       ),
@@ -388,16 +546,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Container(
             width: 36,
             height: 36,
-            decoration: const BoxDecoration(color: Color(0xFFE2E8F0), shape: BoxShape.circle),
-            child: Center(child: Text(_initials(name), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE2E8F0),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                _initials(name),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Text(role, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  role,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),

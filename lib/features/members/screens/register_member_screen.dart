@@ -11,10 +11,19 @@ class RegisterMemberScreen extends ConsumerStatefulWidget {
   const RegisterMemberScreen({super.key});
 
   @override
-  ConsumerState<RegisterMemberScreen> createState() => _RegisterMemberScreenState();
+  ConsumerState<RegisterMemberScreen> createState() =>
+      _RegisterMemberScreenState();
 }
 
 class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
+  static const _roleOptions = <_RoleOption>[
+    _RoleOption('captain', 'Captain'),
+    _RoleOption('setter', 'Setter'),
+    _RoleOption('middle blocker', 'Middle Blocker'),
+    _RoleOption('libero', 'Libero'),
+    _RoleOption('coach', 'Coach'),
+    _RoleOption('player', 'Player'),
+  ];
   final PageController _pageController = PageController();
   int _currentStep = 0;
   static const int _totalSteps = 3;
@@ -23,16 +32,30 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _contributionController = TextEditingController();
-  final _joinDateController = TextEditingController(text: DateTime.now().toIso8601String().split('T').first);
+  final _joinDateController = TextEditingController(
+    text: DateTime.now().toIso8601String().split('T').first,
+  );
 
   String? _selectedRole;
   String _status = 'active';
   bool _isSubmitting = false;
 
   final List<_StepInfo> _steps = const [
-    _StepInfo(icon: Icons.person, title: 'Personal Details', subtitle: 'Name, phone & email'),
-    _StepInfo(icon: Icons.sports_volleyball, title: 'Membership Info', subtitle: 'Role, contribution & date'),
-    _StepInfo(icon: Icons.verified_user, title: 'Status & Review', subtitle: 'Confirm and register'),
+    _StepInfo(
+      icon: Icons.person,
+      title: 'Personal Details',
+      subtitle: 'Name, phone & email',
+    ),
+    _StepInfo(
+      icon: Icons.sports_volleyball,
+      title: 'Membership Info',
+      subtitle: 'Role, contribution & date',
+    ),
+    _StepInfo(
+      icon: Icons.verified_user,
+      title: 'Status & Review',
+      subtitle: 'Confirm and register',
+    ),
   ];
 
   @override
@@ -75,7 +98,9 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
 
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to register a member.')),
+        const SnackBar(
+          content: Text('You must be logged in to register a member.'),
+        ),
       );
       return;
     }
@@ -95,7 +120,11 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
         'phone': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
         'role': _selectedRole,
-        'monthlyContributionAmount': int.tryParse(_contributionController.text.replaceAll(',', '').trim()) ?? 0,
+        'monthlyContributionAmount':
+            int.tryParse(
+              _contributionController.text.replaceAll(',', '').trim(),
+            ) ??
+            0,
         'joinDate': _joinDateController.text.trim(),
         'status': _status,
         'notes': '',
@@ -114,9 +143,9 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -138,7 +167,11 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
         ),
         title: const Text(
           'Register Member',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryBlack,
+          ),
         ),
         actions: [
           Center(
@@ -167,11 +200,7 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
             child: PageView(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStep1(),
-                _buildStep2(),
-                _buildStep3(),
-              ],
+              children: [_buildStep1(), _buildStep2(), _buildStep3()],
             ),
           ),
         ],
@@ -200,7 +229,9 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           height: 2,
-                          color: isCompleted ? AppColors.primaryYellow : AppColors.border,
+                          color: isCompleted
+                              ? AppColors.primaryYellow
+                              : AppColors.border,
                         ),
                       ),
                   ],
@@ -223,12 +254,20 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
                         color: AppColors.primaryBlack,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(_steps[_currentStep].icon, color: AppColors.primaryYellow, size: 16),
+                      child: Icon(
+                        _steps[_currentStep].icon,
+                        color: AppColors.primaryYellow,
+                        size: 16,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       _steps[_currentStep].title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
                     ),
                   ],
                 ),
@@ -237,7 +276,10 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
                   padding: const EdgeInsets.only(left: 32),
                   child: Text(
                     _steps[_currentStep].subtitle,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -250,7 +292,9 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
               value: (_currentStep + 1) / _totalSteps,
               minHeight: 4,
               backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primaryYellow,
+              ),
             ),
           ),
         ],
@@ -267,11 +311,17 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
         color: isCompleted
             ? AppColors.primaryYellow
             : isActive
-                ? AppColors.primaryBlack
-                : AppColors.border,
+            ? AppColors.primaryBlack
+            : AppColors.border,
         shape: BoxShape.circle,
         boxShadow: isActive
-            ? [BoxShadow(color: AppColors.primaryBlack.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2))]
+            ? [
+                BoxShadow(
+                  color: AppColors.primaryBlack.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
             : null,
       ),
       child: Center(
@@ -316,7 +366,10 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
             controller: _emailController,
           ),
           const SizedBox(height: 24),
-          _buildInfoBanner(Icons.info_outline, 'Fill in the member\'s contact information to proceed.'),
+          _buildInfoBanner(
+            Icons.info_outline,
+            'Fill in the member\'s contact information to proceed.',
+          ),
         ],
       ),
     );
@@ -331,7 +384,11 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
           const SizedBox(height: 8),
           const Text(
             'Role / Position',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
@@ -339,7 +396,10 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
             decoration: InputDecoration(
               filled: true,
               fillColor: AppColors.white,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: AppColors.border),
@@ -350,18 +410,21 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.primaryYellow, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primaryYellow,
+                  width: 2,
+                ),
               ),
             ),
             hint: const Text('Select Role'),
-            items: const [
-              DropdownMenuItem(value: 'Captain', child: Text('Captain')),
-              DropdownMenuItem(value: 'Setter', child: Text('Setter')),
-              DropdownMenuItem(value: 'Middle Blocker', child: Text('Middle Blocker')),
-              DropdownMenuItem(value: 'Libero', child: Text('Libero')),
-              DropdownMenuItem(value: 'Coach', child: Text('Coach')),
-              DropdownMenuItem(value: 'Player', child: Text('Player')),
-            ],
+            items: _roleOptions
+                .map(
+                  (option) => DropdownMenuItem(
+                    value: option.value,
+                    child: Text(option.label),
+                  ),
+                )
+                .toList(),
             onChanged: (value) => setState(() => _selectedRole = value),
           ),
           const SizedBox(height: 16),
@@ -378,7 +441,10 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
             controller: _joinDateController,
           ),
           const SizedBox(height: 24),
-          _buildInfoBanner(Icons.sports_volleyball, 'Provide membership details and contribution amount.'),
+          _buildInfoBanner(
+            Icons.sports_volleyball,
+            'Provide membership details and contribution amount.',
+          ),
         ],
       ),
     );
@@ -393,20 +459,40 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
           const SizedBox(height: 8),
           const Text(
             'Member Status',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildStatusOption('active', 'Active', Icons.check_circle_outline)),
+              Expanded(
+                child: _buildStatusOption(
+                  'active',
+                  'Active',
+                  Icons.check_circle_outline,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildStatusOption('inactive', 'Inactive', Icons.cancel_outlined)),
+              Expanded(
+                child: _buildStatusOption(
+                  'inactive',
+                  'Inactive',
+                  Icons.cancel_outlined,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
           const Text(
             'Review Summary',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryBlack),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: AppColors.primaryBlack,
+            ),
           ),
           const SizedBox(height: 12),
           _buildReviewCard(),
@@ -423,7 +509,9 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryYellow.withValues(alpha: 0.12) : AppColors.white,
+          color: isSelected
+              ? AppColors.primaryYellow.withValues(alpha: 0.12)
+              : AppColors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? AppColors.primaryYellow : AppColors.border,
@@ -433,13 +521,21 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: isSelected ? AppColors.primaryBlack : AppColors.textSecondary, size: 20),
+            Icon(
+              icon,
+              color: isSelected
+                  ? AppColors.primaryBlack
+                  : AppColors.textSecondary,
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isSelected ? AppColors.primaryBlack : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.primaryBlack
+                    : AppColors.textSecondary,
               ),
             ),
           ],
@@ -457,37 +553,76 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
       ),
       child: Column(
         children: [
-          _buildReviewRow(Icons.person, 'Full Name', _fullNameController.text.isEmpty ? '-' : _fullNameController.text),
+          _buildReviewRow(
+            Icons.person,
+            'Full Name',
+            _fullNameController.text.isEmpty ? '-' : _fullNameController.text,
+          ),
           _buildReviewDivider(),
-          _buildReviewRow(Icons.phone, 'Phone', _phoneController.text.isEmpty ? '-' : _phoneController.text),
+          _buildReviewRow(
+            Icons.phone,
+            'Phone',
+            _phoneController.text.isEmpty ? '-' : _phoneController.text,
+          ),
           _buildReviewDivider(),
-          _buildReviewRow(Icons.email, 'Email', _emailController.text.isEmpty ? '-' : _emailController.text),
+          _buildReviewRow(
+            Icons.email,
+            'Email',
+            _emailController.text.isEmpty ? '-' : _emailController.text,
+          ),
           _buildReviewDivider(),
-          _buildReviewRow(Icons.sports_volleyball, 'Role', _selectedRole ?? '-'),
+          _buildReviewRow(
+            Icons.sports_volleyball,
+            'Role',
+            _selectedRole ?? '-',
+          ),
           _buildReviewDivider(),
-          _buildReviewRow(Icons.payments, 'Monthly (RWF)', _contributionController.text.isEmpty ? '-' : _contributionController.text),
+          _buildReviewRow(
+            Icons.payments,
+            'Monthly (RWF)',
+            _contributionController.text.isEmpty
+                ? '-'
+                : _contributionController.text,
+          ),
           _buildReviewDivider(),
-          _buildReviewRow(Icons.calendar_today, 'Join Date', _joinDateController.text.isEmpty ? '-' : _joinDateController.text),
+          _buildReviewRow(
+            Icons.calendar_today,
+            'Join Date',
+            _joinDateController.text.isEmpty ? '-' : _joinDateController.text,
+          ),
           _buildReviewDivider(),
           _buildReviewRow(
             _status == 'active' ? Icons.check_circle : Icons.cancel,
             'Status',
             _status == 'active' ? 'Active' : 'Inactive',
-            valueColor: _status == 'active' ? Colors.green.shade700 : Colors.red.shade700,
+            valueColor: _status == 'active'
+                ? Colors.green.shade700
+                : Colors.red.shade700,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildReviewRow(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildReviewRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Icon(icon, size: 18, color: AppColors.textSecondary),
           const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const Spacer(),
           Text(
             value,
@@ -512,7 +647,9 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
       decoration: BoxDecoration(
         color: AppColors.primaryYellow.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primaryYellow.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: AppColors.primaryYellow.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         children: [
@@ -521,7 +658,10 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(fontSize: 12, color: AppColors.primaryBlack),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.primaryBlack,
+              ),
             ),
           ),
         ],
@@ -547,21 +687,36 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
                   side: const BorderSide(color: AppColors.border, width: 1.5),
                   foregroundColor: AppColors.primaryBlack,
                   minimumSize: const Size(0, 52),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: const Text('Back', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: const Text(
+                  'Back',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           if (_currentStep > 0) const SizedBox(width: 12),
           Expanded(
             flex: 3,
             child: ElevatedButton(
-              onPressed: _isSubmitting ? null : isLastStep ? _submit : _nextStep,
+              onPressed: _isSubmitting
+                  ? null
+                  : isLastStep
+                  ? _submit
+                  : _nextStep,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isLastStep ? AppColors.primaryBlack : AppColors.primaryYellow,
-                foregroundColor: isLastStep ? AppColors.primaryYellow : AppColors.primaryBlack,
+                backgroundColor: isLastStep
+                    ? AppColors.primaryBlack
+                    : AppColors.primaryYellow,
+                foregroundColor: isLastStep
+                    ? AppColors.primaryYellow
+                    : AppColors.primaryBlack,
                 minimumSize: const Size(0, 52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
               ),
               child: Row(
@@ -574,11 +729,21 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   else
-                    Icon(isLastStep ? Icons.how_to_reg : Icons.arrow_forward, size: 20),
+                    Icon(
+                      isLastStep ? Icons.how_to_reg : Icons.arrow_forward,
+                      size: 20,
+                    ),
                   const SizedBox(width: 8),
                   Text(
-                    _isSubmitting ? 'Saving...' : isLastStep ? 'Register Member' : 'Continue',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    _isSubmitting
+                        ? 'Saving...'
+                        : isLastStep
+                        ? 'Register Member'
+                        : 'Continue',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                   ),
                 ],
               ),
@@ -591,9 +756,20 @@ class _RegisterMemberScreenState extends ConsumerState<RegisterMemberScreen> {
 }
 
 class _StepInfo {
-  const _StepInfo({required this.icon, required this.title, required this.subtitle});
+  const _StepInfo({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 
   final IconData icon;
   final String title;
   final String subtitle;
+}
+
+class _RoleOption {
+  const _RoleOption(this.value, this.label);
+
+  final String value;
+  final String label;
 }

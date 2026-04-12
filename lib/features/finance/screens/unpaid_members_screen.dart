@@ -11,7 +11,8 @@ class UnpaidMembersScreen extends ConsumerStatefulWidget {
   const UnpaidMembersScreen({super.key});
 
   @override
-  ConsumerState<UnpaidMembersScreen> createState() => _UnpaidMembersScreenState();
+  ConsumerState<UnpaidMembersScreen> createState() =>
+      _UnpaidMembersScreenState();
 }
 
 class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
@@ -24,21 +25,29 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
   }
 
   Future<List<dynamic>> _load() {
-    return ref.read(apiClientProvider).getUnpaidMembers(ref.read(authControllerProvider).token!);
+    return ref
+        .read(apiClientProvider)
+        .getUnpaidMembers(ref.read(authControllerProvider).token!);
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
-    await _future;
+    final future = _load();
+    setState(() {
+      _future = future;
+    });
+    await future;
   }
 
   Future<void> _sendReminder(Map<String, dynamic> member) async {
     try {
-      await ref.read(apiClientProvider).sendReminder(
+      await ref
+          .read(apiClientProvider)
+          .sendReminder(
             token: ref.read(authControllerProvider).token!,
             memberIds: [member['memberId'] as String],
             title: 'Payment Reminder',
-            message: 'Your monthly contribution is overdue. Please clear the outstanding balance.',
+            message:
+                'Your monthly contribution is overdue. Please clear the outstanding balance.',
           );
 
       if (!mounted) {
@@ -53,9 +62,9 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
@@ -73,10 +82,18 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
         ),
         title: const Text(
           'UNPAID MEMBERS',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: AppColors.primaryBlack),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+            color: AppColors.primaryBlack,
+          ),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh, color: AppColors.primaryBlack), onPressed: _refresh),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.primaryBlack),
+            onPressed: _refresh,
+          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
@@ -94,7 +111,10 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                child: Text(
+                  snapshot.error.toString(),
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
@@ -102,7 +122,12 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
           final members = snapshot.data ?? const [];
           final outstandingTotal = members.fold<int>(
             0,
-            (sum, item) => sum + (((item as Map<String, dynamic>)['amountDue'] as Map<String, dynamic>?)?['amount'] as int? ?? 0),
+            (sum, item) =>
+                sum +
+                (((item as Map<String, dynamic>)['amountDue']
+                            as Map<String, dynamic>?)?['amount']
+                        as int? ??
+                    0),
           );
 
           return RefreshIndicator(
@@ -120,16 +145,44 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
                           decoration: BoxDecoration(
                             color: AppColors.primaryBlack,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('UNPAID MEMBERS', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 1)),
+                              const Text(
+                                'UNPAID MEMBERS',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF94A3B8),
+                                  letterSpacing: 1,
+                                ),
+                              ),
                               const SizedBox(height: 8),
-                              Text('${members.length}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
+                              Text(
+                                '${members.length}',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
                               const SizedBox(height: 4),
-                              Text('Current month', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryYellow)),
+                              Text(
+                                'Current month',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryYellow,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -141,16 +194,46 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
                           decoration: BoxDecoration(
                             color: AppColors.primaryYellow,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: AppColors.primaryYellow.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryYellow.withValues(
+                                  alpha: 0.3,
+                                ),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('OUTSTANDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0x99000000), letterSpacing: 1)),
+                              const Text(
+                                'OUTSTANDING',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0x99000000),
+                                  letterSpacing: 1,
+                                ),
+                              ),
                               const SizedBox(height: 8),
-                              Text('RWF $outstandingTotal', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primaryBlack)),
+                              Text(
+                                'RWF $outstandingTotal',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.primaryBlack,
+                                ),
+                              ),
                               const SizedBox(height: 4),
-                              const Text('Current period', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryBlack)),
+                              const Text(
+                                'Current period',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryBlack,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -163,21 +246,46 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('DEFAULTING MEMBERS LIST', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.primaryBlack, letterSpacing: -0.5)),
-                      Text('Sorted by overdue', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                      Text(
+                        'DEFAULTING MEMBERS LIST',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primaryBlack,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Text(
+                        'Sorted by overdue',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 if (members.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(24),
-                    child: Center(child: Text('No unpaid members found.', style: TextStyle(color: AppColors.textSecondary))),
+                    child: Center(
+                      child: Text(
+                        'No unpaid members found.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
                   )
                 else
-                  ...members.map((item) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        child: _buildMemberCard(item as Map<String, dynamic>),
-                      )),
+                  ...members.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: _buildMemberCard(item as Map<String, dynamic>),
+                    ),
+                  ),
               ],
             ),
           );
@@ -188,14 +296,19 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
   }
 
   Widget _buildMemberCard(Map<String, dynamic> member) {
-    final amountDue = (member['amountDue'] as Map<String, dynamic>?)?['formatted'] as String? ?? 'RWF 0';
+    final amountDue =
+        (member['amountDue'] as Map<String, dynamic>?)?['formatted']
+            as String? ??
+        'RWF 0';
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4),
+        ],
       ),
       child: Column(
         children: [
@@ -209,7 +322,10 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
                   backgroundColor: AppColors.backgroundLight,
                   child: Text(
                     _initials(member['fullName'] as String? ?? ''),
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -224,18 +340,42 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(member['fullName'] as String? ?? '', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                Text(
+                                  member['fullName'] as String? ?? '',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
                                 Text(
                                   '${member['role'] ?? '-'} • ${member['team'] ?? '-'}',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary, letterSpacing: 0.5),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(4)),
-                            child: Text('UNPAID', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.red.shade700)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'UNPAID',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.red.shade700,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -246,17 +386,45 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('AMOUNT DUE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
-                              Text(amountDue, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primaryBlack)),
+                              const Text(
+                                'AMOUNT DUE',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textSecondary,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              Text(
+                                amountDue,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.primaryBlack,
+                                ),
+                              ),
                             ],
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text('STATUS', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1)),
+                              const Text(
+                                'STATUS',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textSecondary,
+                                  letterSpacing: 1,
+                                ),
+                              ),
                               Text(
                                 '${member['daysOverdue'] ?? 0} days overdue',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red, fontStyle: FontStyle.italic),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
+                                  fontStyle: FontStyle.italic,
+                                ),
                               ),
                             ],
                           ),
@@ -272,12 +440,26 @@ class _UnpaidMembersScreenState extends ConsumerState<UnpaidMembersScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: ElevatedButton.icon(
               onPressed: () => _sendReminder(member),
-              icon: const Icon(Icons.send, size: 18, color: AppColors.primaryBlack),
-              label: const Text('SEND REMINDER', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: 13, color: AppColors.primaryBlack)),
+              icon: const Icon(
+                Icons.send,
+                size: 18,
+                color: AppColors.primaryBlack,
+              ),
+              label: const Text(
+                'SEND REMINDER',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                  fontSize: 13,
+                  color: AppColors.primaryBlack,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryYellow,
                 minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),

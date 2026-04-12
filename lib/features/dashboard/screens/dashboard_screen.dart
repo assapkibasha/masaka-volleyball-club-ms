@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/network/api_client.dart';
 import '../../../../core/session/auth_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_bottom_nav.dart';
@@ -38,8 +39,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
-    await _future;
+    final future = _load();
+    setState(() {
+      _future = future;
+    });
+    await future;
   }
 
   @override
@@ -133,16 +137,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           }
 
           if (snapshot.hasError) {
+            final errorText = _errorText(snapshot.error);
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      snapshot.error.toString(),
-                      textAlign: TextAlign.center,
+                    const Text(
+                      'Dashboard failed to load',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(errorText, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: _refresh,
@@ -570,6 +581,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final parts = name.split(' ').where((part) => part.isNotEmpty).take(2);
     final value = parts.map((part) => part[0].toUpperCase()).join();
     return value.isEmpty ? 'MV' : value;
+  }
+
+  String _errorText(Object? error) {
+    if (error is ApiException) {
+      final status = error.statusCode == null ? '' : ' (${error.statusCode})';
+      return '${error.message}$status';
+    }
+    return error?.toString() ?? 'Unknown error';
   }
 }
 

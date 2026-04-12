@@ -98,6 +98,8 @@ class ApiClient {
     String? search,
     String? role,
     String? status,
+    int? page,
+    int? pageSize,
   }) {
     return _getList(
       '/members',
@@ -106,6 +108,8 @@ class ApiClient {
         if (search != null && search.isNotEmpty) 'search': search,
         if (role != null && role.isNotEmpty) 'role': role,
         if (status != null && status.isNotEmpty) 'status': status,
+        if (page != null) 'page': '$page',
+        if (pageSize != null) 'pageSize': '$pageSize',
       },
     );
   }
@@ -143,6 +147,8 @@ class ApiClient {
     String? period,
     String? search,
     String? status,
+    int? page,
+    int? pageSize,
   }) {
     return _getList(
       '/contributions',
@@ -151,6 +157,8 @@ class ApiClient {
         if (period != null && period.isNotEmpty) 'period': period,
         if (search != null && search.isNotEmpty) 'search': search,
         if (status != null && status.isNotEmpty) 'status': status,
+        if (page != null) 'page': '$page',
+        if (pageSize != null) 'pageSize': '$pageSize',
       },
     );
   }
@@ -170,6 +178,8 @@ class ApiClient {
     String token, {
     String? status,
     String? search,
+    int? page,
+    int? pageSize,
   }) {
     return _getList(
       '/notifications',
@@ -177,6 +187,8 @@ class ApiClient {
       queryParameters: {
         if (status != null && status.isNotEmpty) 'status': status,
         if (search != null && search.isNotEmpty) 'search': search,
+        if (page != null) 'page': '$page',
+        if (pageSize != null) 'pageSize': '$pageSize',
       },
     );
   }
@@ -235,6 +247,16 @@ class ApiClient {
       '/reports/yearly',
       token: token,
       queryParameters: {'year': '$year'},
+    );
+  }
+
+  Future<JsonMap> getMonthlyReport(String token, {String? period}) {
+    return _get(
+      '/reports/monthly',
+      token: token,
+      queryParameters: {
+        if (period != null && period.isNotEmpty) 'period': period,
+      },
     );
   }
 
@@ -483,9 +505,21 @@ class ApiClient {
   }
 
   String _extractErrorMessage(dynamic body) {
+    if (body is String && body.trim().isNotEmpty) {
+      return body;
+    }
+
     final error = body is JsonMap ? body['error'] : null;
     if (error is JsonMap && error['message'] is String) {
       return error['message'] as String;
+    }
+
+    if (body is JsonMap && body['message'] is String) {
+      return body['message'] as String;
+    }
+
+    if (error is String && error.isNotEmpty) {
+      return error;
     }
 
     return 'Request failed.';

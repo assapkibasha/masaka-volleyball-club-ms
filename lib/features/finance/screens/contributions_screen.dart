@@ -11,7 +11,8 @@ class ContributionsScreen extends ConsumerStatefulWidget {
   const ContributionsScreen({super.key});
 
   @override
-  ConsumerState<ContributionsScreen> createState() => _ContributionsScreenState();
+  ConsumerState<ContributionsScreen> createState() =>
+      _ContributionsScreenState();
 }
 
 class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
@@ -37,21 +38,37 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
     final api = ref.read(apiClientProvider);
 
     _periods = await api.getPeriods(token);
-    _selectedPeriod ??= _periods.isNotEmpty ? (_periods.first as Map<String, dynamic>)['label'] as String? : null;
+    _selectedPeriod ??= _periods.isNotEmpty
+        ? (_periods.first as Map<String, dynamic>)['label'] as String?
+        : null;
 
-    final summary = await api.getContributionSummary(token, period: _selectedPeriod);
+    final summary = await api.getContributionSummary(
+      token,
+      period: _selectedPeriod,
+    );
     final records = await api.getContributions(
       token,
       period: _selectedPeriod,
       search: _searchController.text.trim(),
+      pageSize: 1000,
     );
 
     return _ContributionsData(summary: summary, records: records);
   }
 
+  void _reload() {
+    final future = _load();
+    setState(() {
+      _future = future;
+    });
+  }
+
   Future<void> _refresh() async {
-    setState(() => _future = _load());
-    await _future;
+    final future = _load();
+    setState(() {
+      _future = future;
+    });
+    await future;
   }
 
   @override
@@ -68,20 +85,69 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
         ),
         title: const Text(
           'Contributions',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5, color: AppColors.primaryBlack),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            color: AppColors.primaryBlack,
+          ),
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/reports'),
+              icon: const Icon(
+                Icons.assessment_outlined,
+                size: 18,
+                color: AppColors.primaryBlack,
+              ),
+              label: const Text(
+                'Reports',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryBlack,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.border),
+                backgroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: ElevatedButton.icon(
               onPressed: _refresh,
-              icon: const Icon(Icons.refresh, size: 18, color: AppColors.primaryBlack),
-              label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlack)),
+              icon: const Icon(
+                Icons.refresh,
+                size: 18,
+                color: AppColors.primaryBlack,
+              ),
+              label: const Text(
+                'Refresh',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryBlack,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryYellow,
                 elevation: 1,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
@@ -102,7 +168,10 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                child: Text(
+                  snapshot.error.toString(),
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
@@ -124,27 +193,44 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: _periods.map((period) {
-                        final label = (period as Map<String, dynamic>)['label'] as String? ?? '';
+                        final label =
+                            (period as Map<String, dynamic>)['label']
+                                as String? ??
+                            '';
                         final isSelected = label == _selectedPeriod;
                         return GestureDetector(
                           onTap: () {
                             setState(() {
                               _selectedPeriod = label;
-                              _future = _load();
                             });
+                            _reload();
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 16,
+                            ),
                             margin: const EdgeInsets.only(right: 24),
                             decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(color: isSelected ? AppColors.primaryYellow : Colors.transparent, width: 2)),
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.primaryYellow
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
                             ),
                             child: Text(
                               label,
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isSelected ? AppColors.primaryBlack : AppColors.textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? AppColors.primaryBlack
+                                    : AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -157,11 +243,35 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Expanded(child: _buildSummaryCard('Total Expected', _money(data.summary['expectedTotal']), null, false)),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          'Total Expected',
+                          _money(data.summary['expectedTotal']),
+                          null,
+                          false,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildSummaryCard('Received Money', _money(data.summary['receivedTotal'] ?? data.summary['collectedTotal']), AppColors.primaryYellow, true)),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          'Total Collected',
+                          _money(data.summary['collectedTotal']),
+                          Colors.green.shade600,
+                          true,
+                          backgroundColor: Colors.green.withValues(alpha: 0.06),
+                          valueColor: Colors.green.shade700,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildSummaryCard('Outstanding', _money(data.summary['outstandingTotal']), null, false, valueColor: Colors.red.shade600)),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          'Outstanding',
+                          _money(data.summary['outstandingTotal']),
+                          null,
+                          false,
+                          valueColor: Colors.red.shade600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -169,14 +279,24 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: TextField(
                     controller: _searchController,
+                    onChanged: (_) => _reload(),
                     onSubmitted: (_) => _refresh(),
                     decoration: InputDecoration(
-                      hintText: 'Search member name...',
-                      hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                      prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                      hintText: 'Search by name, email, phone...',
+                      hintStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.textSecondary,
+                      ),
                       filled: true,
                       fillColor: AppColors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: const BorderSide(color: AppColors.border),
@@ -193,8 +313,22 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('RECENT RECORDS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, color: AppColors.textSecondary)),
-                      Text('Showing ${data.records.length} entries', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      const Text(
+                        'RECENT RECORDS',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        'Showing ${data.records.length} entries',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -202,13 +336,23 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
                 if (data.records.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(24),
-                    child: Center(child: Text('No contribution records found.', style: TextStyle(color: AppColors.textSecondary))),
+                    child: Center(
+                      child: Text(
+                        'No contribution records found.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
                   )
                 else
-                  ...data.records.map((record) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: _buildRecordCard(record as Map<String, dynamic>),
-                      )),
+                  ...data.records.map(
+                    (record) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: _buildRecordCard(record as Map<String, dynamic>),
+                    ),
+                  ),
               ],
             ),
           );
@@ -218,26 +362,53 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String label, String value, Color? leftBorderColor, bool hasLeftAccent, {Color? valueColor}) {
+  Widget _buildSummaryCard(
+    String label,
+    String value,
+    Color? leftBorderColor,
+    bool hasLeftAccent, {
+    Color? backgroundColor,
+    Color? valueColor,
+  }) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: backgroundColor ?? AppColors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border(
-          left: BorderSide(color: leftBorderColor ?? AppColors.border, width: hasLeftAccent ? 4 : 1),
+          left: BorderSide(
+            color: leftBorderColor ?? AppColors.border,
+            width: hasLeftAccent ? 4 : 1,
+          ),
           top: const BorderSide(color: AppColors.border),
           right: const BorderSide(color: AppColors.border),
           bottom: const BorderSide(color: AppColors.border),
         ),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.8)),
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.8,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: valueColor ?? AppColors.primaryBlack)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: valueColor ?? AppColors.primaryBlack,
+            ),
+          ),
         ],
       ),
     );
@@ -272,18 +443,59 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
           CircleAvatar(
             radius: 20,
             backgroundColor: const Color(0xFFF1F5F9),
-            child: Text(_initials(record['memberName'] as String? ?? ''), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF64748B))),
+            child: Text(
+              _initials(record['memberName'] as String? ?? ''),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Color(0xFF64748B),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(record['memberName'] as String? ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  record['memberName'] as String? ?? 'Unknown',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   _formatDate(record['lastPaymentDate'] as String?),
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildAmountChip(
+                      'Expected',
+                      _money(record['expectedAmount']),
+                      AppColors.primaryBlack,
+                      const Color(0xFFF8FAFC),
+                    ),
+                    _buildAmountChip(
+                      'Recorded',
+                      _money(record['totalPaid']),
+                      Colors.green.shade700,
+                      Colors.green.withValues(alpha: 0.1),
+                    ),
+                    _buildAmountChip(
+                      'Balance',
+                      _money(record['balance']),
+                      Colors.red.shade700,
+                      Colors.red.withValues(alpha: 0.08),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -291,14 +503,77 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(_money(record['totalPaid']), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+              Text(
+                _money(record['balance']),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Outstanding',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(4)),
-                child: Text((record['status'] as String? ?? '').toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusText)),
+                decoration: BoxDecoration(
+                  color: statusBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  (record['status'] as String? ?? '').toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: statusText,
+                  ),
+                ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountChip(
+    String label,
+    String value,
+    Color textColor,
+    Color backgroundColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
           ),
         ],
       ),
@@ -328,10 +603,7 @@ class _ContributionsScreenState extends ConsumerState<ContributionsScreen> {
 }
 
 class _ContributionsData {
-  const _ContributionsData({
-    required this.summary,
-    required this.records,
-  });
+  const _ContributionsData({required this.summary, required this.records});
 
   final Map<String, dynamic> summary;
   final List<dynamic> records;

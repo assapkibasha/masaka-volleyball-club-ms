@@ -56,8 +56,11 @@ class _DeveloperPanelScreenState extends ConsumerState<DeveloperPanelScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
-    await _future;
+    final future = _load();
+    setState(() {
+      _future = future;
+    });
+    await future;
   }
 
   Future<void> _createAccount() async {
@@ -158,16 +161,23 @@ class _DeveloperPanelScreenState extends ConsumerState<DeveloperPanelScreen> {
           }
 
           if (snapshot.hasError) {
+            final errorText = _errorText(snapshot.error);
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      snapshot.error.toString(),
-                      textAlign: TextAlign.center,
+                    const Text(
+                      'Developer data failed to load',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlack,
+                      ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(errorText, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: _refresh,
@@ -528,6 +538,14 @@ class _DeveloperPanelScreenState extends ConsumerState<DeveloperPanelScreen> {
     final parts = value.split(' ').where((part) => part.isNotEmpty).take(2);
     final initials = parts.map((part) => part[0].toUpperCase()).join();
     return initials.isEmpty ? 'AD' : initials;
+  }
+
+  String _errorText(Object? error) {
+    if (error is ApiException) {
+      final status = error.statusCode == null ? '' : ' (${error.statusCode})';
+      return '${error.message}$status';
+    }
+    return error?.toString() ?? 'Unknown error';
   }
 }
 

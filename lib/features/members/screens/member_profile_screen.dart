@@ -8,18 +8,24 @@ import '../../../../core/session/auth_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class MemberProfileScreen extends ConsumerStatefulWidget {
-  const MemberProfileScreen({
-    required this.memberId,
-    super.key,
-  });
+  const MemberProfileScreen({required this.memberId, super.key});
 
   final String memberId;
 
   @override
-  ConsumerState<MemberProfileScreen> createState() => _MemberProfileScreenState();
+  ConsumerState<MemberProfileScreen> createState() =>
+      _MemberProfileScreenState();
 }
 
 class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
+  static const _roleOptions = <_RoleOption>[
+    _RoleOption('captain', 'Captain'),
+    _RoleOption('setter', 'Setter'),
+    _RoleOption('middle blocker', 'Middle Blocker'),
+    _RoleOption('libero', 'Libero'),
+    _RoleOption('coach', 'Coach'),
+    _RoleOption('player', 'Player'),
+  ];
   late Future<_MemberProfileData> _future;
 
   @override
@@ -33,21 +39,26 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
     final api = ref.read(apiClientProvider);
 
     final member = await api.getMember(token, widget.memberId);
-    final contributions = await api.getMemberContributions(token, widget.memberId);
-
-    return _MemberProfileData(
-      member: member,
-      contributions: contributions,
+    final contributions = await api.getMemberContributions(
+      token,
+      widget.memberId,
     );
+
+    return _MemberProfileData(member: member, contributions: contributions);
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
-    await _future;
+    final future = _load();
+    setState(() {
+      _future = future;
+    });
+    await future;
   }
 
   Future<void> _recordPayment(Map<String, dynamic> member) async {
-    final amountController = TextEditingController(text: '${member['monthlyContributionAmount'] ?? 0}');
+    final amountController = TextEditingController(
+      text: '${member['monthlyContributionAmount'] ?? 0}',
+    );
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -59,8 +70,14 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
           decoration: const InputDecoration(labelText: 'Amount paid'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -70,13 +87,12 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
     }
 
     try {
-      await ref.read(apiClientProvider).recordPayment(
-            ref.read(authControllerProvider).token!,
-            {
-              'memberId': member['id'],
-              'amountPaid': int.tryParse(amountController.text.trim()) ?? 0,
-            },
-          );
+      await ref
+          .read(apiClientProvider)
+          .recordPayment(ref.read(authControllerProvider).token!, {
+            'memberId': member['id'],
+            'amountPaid': int.tryParse(amountController.text.trim()) ?? 0,
+          });
 
       if (!mounted) {
         return;
@@ -91,19 +107,22 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
   Future<void> _sendReminder(Map<String, dynamic> member) async {
     try {
-      await ref.read(apiClientProvider).sendReminder(
+      await ref
+          .read(apiClientProvider)
+          .sendReminder(
             token: ref.read(authControllerProvider).token!,
             memberIds: [member['id'] as String],
             title: 'Contribution Reminder',
-            message: 'Please check your latest contribution status and make payment if due.',
+            message:
+                'Please check your latest contribution status and make payment if due.',
           );
 
       if (!mounted) {
@@ -118,18 +137,26 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
   Future<void> _editProfile(Map<String, dynamic> member) async {
-    final nameController = TextEditingController(text: member['fullName'] as String? ?? '');
-    final phoneController = TextEditingController(text: member['phone'] as String? ?? '');
-    final emailController = TextEditingController(text: member['email'] as String? ?? '');
-    final amountController = TextEditingController(text: '${member['monthlyContributionAmount'] ?? 0}');
-    String selectedRole = member['role'] as String? ?? 'Player';
+    final nameController = TextEditingController(
+      text: member['fullName'] as String? ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: member['phone'] as String? ?? '',
+    );
+    final emailController = TextEditingController(
+      text: member['email'] as String? ?? '',
+    );
+    final amountController = TextEditingController(
+      text: '${member['monthlyContributionAmount'] ?? 0}',
+    );
+    String selectedRole = _normalizeRole(member['role'] as String?) ?? 'player';
     String selectedStatus = member['status'] as String? ?? 'active';
 
     final saved = await showDialog<bool>(
@@ -158,14 +185,14 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: selectedRole,
-                  items: const [
-                    DropdownMenuItem(value: 'Captain', child: Text('Captain')),
-                    DropdownMenuItem(value: 'Setter', child: Text('Setter')),
-                    DropdownMenuItem(value: 'Middle Blocker', child: Text('Middle Blocker')),
-                    DropdownMenuItem(value: 'Libero', child: Text('Libero')),
-                    DropdownMenuItem(value: 'Coach', child: Text('Coach')),
-                    DropdownMenuItem(value: 'Player', child: Text('Player')),
-                  ],
+                  items: _roleOptions
+                      .map(
+                        (option) => DropdownMenuItem(
+                          value: option.value,
+                          child: Text(option.label),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (value) {
                     if (value != null) {
                       setModalState(() => selectedRole = value);
@@ -177,14 +204,19 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                 TextField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Monthly Contribution'),
+                  decoration: const InputDecoration(
+                    labelText: 'Monthly Contribution',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: selectedStatus,
                   items: const [
                     DropdownMenuItem(value: 'active', child: Text('Active')),
-                    DropdownMenuItem(value: 'inactive', child: Text('Inactive')),
+                    DropdownMenuItem(
+                      value: 'inactive',
+                      child: Text('Inactive'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value != null) {
@@ -197,8 +229,14 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-            ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Save')),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Save'),
+            ),
           ],
         ),
       ),
@@ -210,34 +248,35 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
 
     try {
       await ref.read(apiClientProvider).updateMember(
-            ref.read(authControllerProvider).token!,
-            widget.memberId,
-            {
-              'fullName': nameController.text.trim(),
-              'phone': phoneController.text.trim(),
-              'email': emailController.text.trim(),
-              'role': selectedRole,
-              'monthlyContributionAmount': int.tryParse(amountController.text.trim()) ?? 0,
-              'status': selectedStatus,
-            },
-          );
+        ref.read(authControllerProvider).token!,
+        widget.memberId,
+        {
+          'fullName': nameController.text.trim(),
+          'phone': phoneController.text.trim(),
+          'email': emailController.text.trim(),
+          'role': selectedRole,
+          'monthlyContributionAmount':
+              int.tryParse(amountController.text.trim()) ?? 0,
+          'status': selectedStatus,
+        },
+      );
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated.')));
       await _refresh();
     } on ApiException catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
@@ -255,7 +294,11 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
         ),
         title: const Text(
           'Member Details',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryBlack,
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -280,7 +323,10 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                child: Text(
+                  snapshot.error.toString(),
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
@@ -339,7 +385,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                         backgroundColor: AppColors.primaryBlack,
                         foregroundColor: AppColors.primaryYellow,
                         minimumSize: const Size(0, 52),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -352,7 +400,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryYellow,
                         foregroundColor: AppColors.primaryBlack,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: EdgeInsets.zero,
                       ),
                       child: const Icon(Icons.notifications_outlined),
@@ -369,7 +419,7 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
 
   Widget _buildProfileHeader(Map<String, dynamic> member) {
     final fullName = member['fullName'] as String? ?? 'Unknown Member';
-    final role = member['role'] as String? ?? 'Member';
+    final role = _roleLabel(member['role'] as String?) ?? 'Member';
     final joinDate = _formatJoinDate(member['joinDate'] as String?);
     final avatarUrl = member['avatarUrl'] as String?;
     final status = member['status'] as String? ?? 'inactive';
@@ -380,7 +430,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8),
+        ],
       ),
       child: Column(
         children: [
@@ -389,11 +441,17 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: const Color(0xFFF1F5F9),
-                foregroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                foregroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? NetworkImage(avatarUrl)
+                    : null,
                 child: avatarUrl == null || avatarUrl.isEmpty
                     ? Text(
                         _initials(fullName),
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF64748B)),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF64748B),
+                        ),
                       )
                     : null,
               ),
@@ -416,7 +474,11 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
           Text(
             fullName.toUpperCase(),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primaryBlack),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: AppColors.primaryBlack,
+            ),
           ),
           const SizedBox(height: 6),
           Container(
@@ -427,13 +489,22 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
             ),
             child: Text(
               role.toUpperCase(),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, color: AppColors.primaryYellow),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+                color: AppColors.primaryYellow,
+              ),
             ),
           ),
           const SizedBox(height: 10),
           Text(
             joinDate,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -450,9 +521,14 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
               backgroundColor: AppColors.primaryYellow,
               foregroundColor: AppColors.primaryBlack,
               minimumSize: const Size(0, 46),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Edit Profile',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -463,9 +539,14 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
               foregroundColor: AppColors.primaryBlack,
               minimumSize: const Size(0, 46),
               side: const BorderSide(color: AppColors.primaryBlack, width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Message', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Message',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],
@@ -473,15 +554,16 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   }
 
   Widget _buildStatusCard(Map<String, dynamic>? latestContribution) {
-    final period = latestContribution?['period'] as String? ?? 'No current period';
+    final period =
+        latestContribution?['period'] as String? ?? 'No current period';
     final status = latestContribution?['status'] as String? ?? 'unpaid';
     final isPaid = status == 'paid';
     final isPartial = status == 'partial';
     final statusColor = isPaid
         ? Colors.green
         : isPartial
-            ? Colors.orange
-            : Colors.red;
+        ? Colors.orange
+        : Colors.red;
     final statusLabel = status.toUpperCase();
 
     return Container(
@@ -499,12 +581,19 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
               children: [
                 const Text(
                   'Payment Status',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryBlack,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Current cycle: $period',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -518,7 +607,12 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
             ),
             child: Text(
               statusLabel,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1, color: statusColor),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+                color: statusColor,
+              ),
             ),
           ),
         ],
@@ -540,7 +634,11 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primaryBlack),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryBlack,
+          ),
         ),
       ],
     );
@@ -549,9 +647,21 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
   Widget _buildInfoGrid(Map<String, dynamic> member) {
     final items = [
       _InfoItem(Icons.call, 'Phone Number', member['phone'] as String? ?? '-'),
-      _InfoItem(Icons.mail_outline, 'Email Address', member['email'] as String? ?? '-'),
-      _InfoItem(Icons.payments_outlined, 'Monthly Contribution', 'RWF ${_number(member['monthlyContributionAmount'])}'),
-      _InfoItem(Icons.badge_outlined, 'Membership ID', member['memberNumber'] as String? ?? '-'),
+      _InfoItem(
+        Icons.mail_outline,
+        'Email Address',
+        member['email'] as String? ?? '-',
+      ),
+      _InfoItem(
+        Icons.payments_outlined,
+        'Monthly Contribution',
+        'RWF ${_number(member['monthlyContributionAmount'])}',
+      ),
+      _InfoItem(
+        Icons.badge_outlined,
+        'Membership ID',
+        member['memberNumber'] as String? ?? '-',
+      ),
     ];
 
     return Wrap(
@@ -560,7 +670,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
       children: items
           .map(
             (item) => SizedBox(
-              width: MediaQuery.of(context).size.width >= 720 ? (MediaQuery.of(context).size.width - 56) / 2 : double.infinity,
+              width: MediaQuery.of(context).size.width >= 720
+                  ? (MediaQuery.of(context).size.width - 56) / 2
+                  : double.infinity,
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -585,12 +697,21 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                         children: [
                           Text(
                             item.label.toUpperCase(),
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1, color: Color(0xFF94A3B8)),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                              color: Color(0xFF94A3B8),
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             item.value,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryBlack,
+                            ),
                           ),
                         ],
                       ),
@@ -614,7 +735,10 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
           border: Border.all(color: AppColors.border),
         ),
         child: const Center(
-          child: Text('No payment history yet.', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text(
+            'No payment history yet.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
         ),
       );
     }
@@ -626,7 +750,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
-        children: contributions.map((entry) => _buildPaymentRow(entry as Map<String, dynamic>)).toList(),
+        children: contributions
+            .map((entry) => _buildPaymentRow(entry as Map<String, dynamic>))
+            .toList(),
       ),
     );
   }
@@ -636,17 +762,21 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
     final paidColor = status == 'paid'
         ? Colors.green
         : status == 'partial'
-            ? Colors.orange
-            : Colors.red;
+        ? Colors.orange
+        : Colors.red;
     final payments = contribution['payments'] as List<dynamic>? ?? const [];
-    final lastPayment = payments.isNotEmpty ? payments.first as Map<String, dynamic> : null;
+    final lastPayment = payments.isNotEmpty
+        ? payments.first as Map<String, dynamic>
+        : null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: contribution == (contribution) ? Colors.transparent : AppColors.divider,
+            color: contribution == (contribution)
+                ? Colors.transparent
+                : AppColors.divider,
           ),
         ),
       ),
@@ -659,7 +789,9 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: status == 'unpaid' ? Colors.red.shade600 : AppColors.primaryBlack,
+                color: status == 'unpaid'
+                    ? Colors.red.shade600
+                    : AppColors.primaryBlack,
               ),
             ),
           ),
@@ -667,14 +799,20 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
             flex: 2,
             child: Text(
               _money(contribution['totalPaid']),
-              style: const TextStyle(fontSize: 14, color: AppColors.primaryBlack),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.primaryBlack,
+              ),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
               _formatShortDate(lastPayment?['paymentDate'] as String?),
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           Expanded(
@@ -688,7 +826,11 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
                 ),
                 child: Text(
                   status.toUpperCase(),
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: paidColor),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: paidColor,
+                  ),
                 ),
               ),
             ),
@@ -721,20 +863,45 @@ class _MemberProfileScreenState extends ConsumerState<MemberProfileScreen> {
     return 'RWF 0';
   }
 
-  String _number(dynamic value) => NumberFormat('#,##0').format((value as num?) ?? 0);
+  String _number(dynamic value) =>
+      NumberFormat('#,##0').format((value as num?) ?? 0);
 
   String _initials(String value) {
     final parts = value.split(' ').where((part) => part.isNotEmpty).take(2);
     final text = parts.map((part) => part[0].toUpperCase()).join();
     return text.isEmpty ? 'MV' : text;
   }
+
+  String? _normalizeRole(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    final normalized = value.trim().toLowerCase();
+    for (final option in _roleOptions) {
+      if (option.value == normalized ||
+          option.label.toLowerCase() == normalized) {
+        return option.value;
+      }
+    }
+    return normalized;
+  }
+
+  String? _roleLabel(String? value) {
+    final normalized = _normalizeRole(value);
+    if (normalized == null) {
+      return null;
+    }
+    for (final option in _roleOptions) {
+      if (option.value == normalized) {
+        return option.label;
+      }
+    }
+    return value;
+  }
 }
 
 class _MemberProfileData {
-  const _MemberProfileData({
-    required this.member,
-    required this.contributions,
-  });
+  const _MemberProfileData({required this.member, required this.contributions});
 
   final Map<String, dynamic> member;
   final List<dynamic> contributions;
@@ -753,4 +920,11 @@ class _InfoItem {
   final IconData icon;
   final String label;
   final String value;
+}
+
+class _RoleOption {
+  const _RoleOption(this.value, this.label);
+
+  final String value;
+  final String label;
 }
