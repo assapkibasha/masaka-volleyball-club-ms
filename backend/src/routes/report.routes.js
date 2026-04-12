@@ -130,4 +130,35 @@ reportRouter.get("/monthly", asyncHandler(async (req, res) => {
   });
 }));
 
+reportRouter.get("/recent-payments", asyncHandler(async (req, res) => {
+  const limit = Math.min(Number(req.query.limit || 10), 100);
+  const payments = await Payment.findAll({
+    where: { rootAdminId: req.scopeAdminId },
+    include: [{ association: "member" }],
+    order: [["paymentDate", "DESC"]],
+    limit,
+  });
+
+  const totalAmountCollected = payments.reduce(
+    (sum, payment) => sum + payment.amountPaid,
+    0,
+  );
+
+  ok(res, {
+    generatedAt: new Date().toISOString(),
+    organization: "Masaka Volleyball Club",
+    totalPayments: payments.length,
+    totalAmountCollected: toCurrencyBreakdown(totalAmountCollected),
+    payments: payments.map((payment, index) => ({
+      id: String(index + 1).padStart(3, "0"),
+      memberName: payment.member ? payment.member.fullName : "Unknown member",
+      amountPaid: toCurrencyBreakdown(payment.amountPaid),
+      status: "Paid",
+      paymentDate: payment.paymentDate,
+      paymentMethod: payment.paymentMethod,
+      referenceNumber: payment.referenceNumber,
+    })),
+  });
+}));
+
 module.exports = { reportRouter };
