@@ -61,6 +61,10 @@ function defineMember(sequelize) {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    rootAdminId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   });
 }
 

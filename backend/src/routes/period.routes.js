@@ -10,8 +10,9 @@ const periodRouter = express.Router();
 
 periodRouter.use(requireAuth);
 
-periodRouter.get("/", asyncHandler(async (_req, res) => {
+periodRouter.get("/", asyncHandler(async (req, res) => {
   const periods = await ContributionPeriod.findAll({
+    where: { rootAdminId: req.scopeAdminId },
     order: [["year", "DESC"], ["month", "DESC"]],
   });
   ok(res, periods);
@@ -25,7 +26,7 @@ periodRouter.post("/", asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const period = await getOrCreatePeriod(Number(year), Number(month));
+  const period = await getOrCreatePeriod(Number(year), Number(month), req.scopeAdminId);
   res.status(201);
   ok(res, period);
 }));

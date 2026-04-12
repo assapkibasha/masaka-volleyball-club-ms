@@ -18,7 +18,6 @@ function defineContributionPeriod(sequelize) {
     label: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
     },
     startsAt: {
       type: DataTypes.DATEONLY,
@@ -36,6 +35,10 @@ function defineContributionPeriod(sequelize) {
       type: DataTypes.ENUM("open", "closed"),
       allowNull: false,
       defaultValue: "open",
+    },
+    rootAdminId: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
   });
 }

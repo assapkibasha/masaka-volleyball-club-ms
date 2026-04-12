@@ -14,11 +14,12 @@ const memberRouter = express.Router();
 memberRouter.use(requireAuth);
 
 memberRouter.get("/unpaid", asyncHandler(async (req, res) => {
-  const period = await getCurrentPeriod();
+  const period = await getCurrentPeriod(req.scopeAdminId);
   await ensureChargesForActiveMembers(period);
 
   const chargeWhere = {
     periodId: period.id,
+    rootAdminId: req.scopeAdminId,
     status: { [Op.in]: ["unpaid", "partial"] },
   };
 
@@ -56,7 +57,7 @@ memberRouter.get("/unpaid", asyncHandler(async (req, res) => {
 
 memberRouter.get("/", asyncHandler(async (req, res) => {
   const { search, status, role, page = 1, pageSize = 20 } = req.query;
-  const where = {};
+  const where = { rootAdminId: req.scopeAdminId };
 
   if (status) {
     where.status = status;
@@ -108,9 +109,10 @@ memberRouter.post("/", asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const count = await Member.count();
+  const count = await Member.count({ where: { rootAdminId: req.scopeAdminId } });
   const member = await Member.create({
-    memberNumber: `MVCS-${String(count + 1).padStart(3, "0")}`,
+    rootAdminId: req.scopeAdminId,
+    memberNumber: `MVCS-${req.scopeAdminId.slice(0, 8).toUpperCase()}-${String(count + 1).padStart(3, "0")}`,
     fullName,
     phone: phone || null,
     email: email || null,
@@ -124,7 +126,7 @@ memberRouter.post("/", asyncHandler(async (req, res) => {
     avatarUrl: avatarUrl || null,
   });
 
-  const period = await getCurrentPeriod();
+  const period = await getCurrentPeriod(req.scopeAdminId);
   await ensureChargeForMember(member, period);
   await logAudit(req.user.id, "member.create", "member", member.id, { fullName: member.fullName });
 
@@ -133,7 +135,9 @@ memberRouter.post("/", asyncHandler(async (req, res) => {
 }));
 
 memberRouter.get("/:memberId", asyncHandler(async (req, res) => {
-  const member = await Member.findByPk(req.params.memberId);
+  const member = await Member.findOne({
+    where: { id: req.params.memberId, rootAdminId: req.scopeAdminId }
+  });
 
   if (!member) {
     const error = new Error("Member not found.");
@@ -145,7 +149,9 @@ memberRouter.get("/:memberId", asyncHandler(async (req, res) => {
 }));
 
 memberRouter.patch("/:memberId", asyncHandler(async (req, res) => {
-  const member = await Member.findByPk(req.params.memberId);
+  const member = await Member.findOne({
+    where: { id: req.params.memberId, rootAdminId: req.scopeAdminId }
+  });
 
   if (!member) {
     const error = new Error("Member not found.");
@@ -184,7 +190,9 @@ memberRouter.patch("/:memberId", asyncHandler(async (req, res) => {
 }));
 
 memberRouter.get("/:memberId/contributions", asyncHandler(async (req, res) => {
-  const member = await Member.findByPk(req.params.memberId);
+  const member = await Member.findOne({
+    where: { id: req.params.memberId, rootAdminId: req.scopeAdminId }
+  });
 
   if (!member) {
     const error = new Error("Member not found.");
@@ -193,7 +201,7 @@ memberRouter.get("/:memberId/contributions", asyncHandler(async (req, res) => {
   }
 
   const charges = await ContributionCharge.findAll({
-    where: { memberId: member.id },
+    where: { memberId: member.id, rootAdminId: req.scopeAdminId },
     include: [
       { association: "period" },
       { association: "payments" },
@@ -221,7 +229,7 @@ memberRouter.get("/:memberId/contributions", asyncHandler(async (req, res) => {
 
 memberRouter.get("/:memberId/notifications", asyncHandler(async (req, res) => {
   const notifications = await NotificationLog.findAll({
-    where: { memberId: req.params.memberId },
+    where: { memberId: req.params.memberId, rootAdminId: req.scopeAdminId },
     order: [["createdAt", "DESC"]],
   });
 

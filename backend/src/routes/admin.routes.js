@@ -11,8 +11,9 @@ const adminRouter = express.Router();
 
 adminRouter.use(requireAuth);
 
-adminRouter.get("/", asyncHandler(async (_req, res) => {
+adminRouter.get("/", asyncHandler(async (req, res) => {
   const admins = await AdminUser.findAll({
+    where: { id: req.user.id },
     order: [["createdAt", "DESC"]],
     attributes: { exclude: ["passwordHash"] },
   });
@@ -29,13 +30,15 @@ adminRouter.post("/", requireRole("super_admin"), asyncHandler(async (req, res) 
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const admin = await AdminUser.create({
+  let admin = await AdminUser.create({
     fullName,
     email,
     phone: phone || null,
     passwordHash,
     role: role || "admin",
   });
+  admin.rootAdminId = admin.id;
+  await admin.save();
 
   await logAudit(req.user.id, "admin.create", "admin_user", admin.id, { email: admin.email });
 
@@ -50,8 +53,16 @@ adminRouter.post("/", requireRole("super_admin"), asyncHandler(async (req, res) 
   });
 }));
 
-adminRouter.patch("/:adminId", requireRole("super_admin"), asyncHandler(async (req, res) => {
-  const admin = await AdminUser.findByPk(req.params.adminId);
+adminRouter.patch("/:adminId", asyncHandler(async (req, res) => {
+  if (req.params.adminId !== req.user.id) {
+    const error = new Error("You can only update your own account.");
+    error.status = 403;
+    throw error;
+  }
+
+  const admin = await AdminUser.findOne({
+    where: { id: req.user.id }
+  });
 
   if (!admin) {
     const error = new Error("Admin not found.");
@@ -59,7 +70,7 @@ adminRouter.patch("/:adminId", requireRole("super_admin"), asyncHandler(async (r
     throw error;
   }
 
-  const allowedFields = ["fullName", "phone", "role", "status"];
+  const allowedFields = ["fullName", "phone"];
   for (const field of allowedFields) {
     if (Object.prototype.hasOwnProperty.call(req.body, field)) {
       admin[field] = req.body[field];

@@ -9,6 +9,7 @@ const { reportRouter } = require("./report.routes");
 const { settingRouter } = require("./setting.routes");
 const { adminRouter } = require("./admin.routes");
 const { periodRouter } = require("./period.routes");
+const { platformRouter } = require("./platform.routes");
 const { ok } = require("../utils/response");
 
 const apiRouter = express.Router();
@@ -26,5 +27,6 @@ apiRouter.use("/reports", reportRouter);
 apiRouter.use("/settings", settingRouter);
 apiRouter.use("/admins", adminRouter);
 apiRouter.use("/periods", periodRouter);
+apiRouter.use("/platform", platformRouter);
 
 module.exports = { apiRouter };

@@ -28,6 +28,10 @@ function definePayment(sequelize) {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    rootAdminId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   });
 }
 

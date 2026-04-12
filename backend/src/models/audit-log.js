@@ -23,6 +23,10 @@ function defineAuditLog(sequelize) {
       type: DataTypes.JSON,
       allowNull: true,
     },
+    rootAdminId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   });
 }
 

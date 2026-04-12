@@ -13,7 +13,7 @@ reportRouter.use(requireAuth);
 reportRouter.get("/yearly", asyncHandler(async (req, res) => {
   const year = Number(req.query.year || new Date().getUTCFullYear());
   const periods = await ContributionPeriod.findAll({
-    where: { year },
+    where: { year, rootAdminId: req.scopeAdminId },
     order: [["month", "ASC"]],
   });
 
@@ -22,8 +22,8 @@ reportRouter.get("/yearly", asyncHandler(async (req, res) => {
   let collectedTotal = 0;
 
   for (const period of periods) {
-    const charges = await ContributionCharge.findAll({ where: { periodId: period.id } });
-    const payments = await Payment.findAll({ where: { periodId: period.id } });
+    const charges = await ContributionCharge.findAll({ where: { periodId: period.id, rootAdminId: req.scopeAdminId } });
+    const payments = await Payment.findAll({ where: { periodId: period.id, rootAdminId: req.scopeAdminId } });
 
     const expected = charges.reduce((sum, charge) => sum + charge.finalAmountDue, 0);
     const collected = payments.reduce((sum, payment) => sum + payment.amountPaid, 0);

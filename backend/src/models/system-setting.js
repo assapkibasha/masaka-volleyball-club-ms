@@ -10,11 +10,14 @@ function defineSystemSetting(sequelize) {
     key: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
     },
     value: {
       type: DataTypes.JSON,
       allowNull: false,
+    },
+    rootAdminId: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
   });
 }

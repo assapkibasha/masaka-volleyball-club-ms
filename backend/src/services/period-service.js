@@ -20,9 +20,11 @@ function monthRange(year, month) {
   };
 }
 
-async function getOrCreatePeriod(year, month) {
+async function getOrCreatePeriod(year, month, rootAdminId) {
   const label = formatLabel(year, month);
-  const existing = await ContributionPeriod.findOne({ where: { label } });
+  const existing = await ContributionPeriod.findOne({ 
+    where: { label, rootAdminId } 
+  });
 
   if (existing) {
     return existing;
@@ -31,6 +33,7 @@ async function getOrCreatePeriod(year, month) {
   const range = monthRange(year, month);
 
   return ContributionPeriod.create({
+    rootAdminId,
     year,
     month,
     label,
@@ -38,9 +41,9 @@ async function getOrCreatePeriod(year, month) {
   });
 }
 
-async function getCurrentPeriod() {
+async function getCurrentPeriod(rootAdminId) {
   const now = new Date();
-  return getOrCreatePeriod(now.getUTCFullYear(), now.getUTCMonth() + 1);
+  return getOrCreatePeriod(now.getUTCFullYear(), now.getUTCMonth() + 1, rootAdminId);
 }
 
 async function ensureChargeForMember(member, period) {
@@ -48,6 +51,7 @@ async function ensureChargeForMember(member, period) {
     where: {
       memberId: member.id,
       periodId: period.id,
+      rootAdminId: member.rootAdminId,
     },
   });
 
@@ -56,6 +60,7 @@ async function ensureChargeForMember(member, period) {
   }
 
   return ContributionCharge.create({
+    rootAdminId: member.rootAdminId,
     memberId: member.id,
     periodId: period.id,
     expectedAmount: member.monthlyContributionAmount,
@@ -65,12 +70,15 @@ async function ensureChargeForMember(member, period) {
 }
 
 async function ensureChargesForActiveMembers(period) {
-  const members = await Member.findAll({ where: { status: "active" } });
+  const members = await Member.findAll({ 
+    where: { status: "active", rootAdminId: period.rootAdminId } 
+  });
   await Promise.all(members.map((member) => ensureChargeForMember(member, period)));
 }
 
-async function refreshChargeStatus(chargeId) {
-  const charge = await ContributionCharge.findByPk(chargeId, {
+async function refreshChargeStatus(chargeId, rootAdminId) {
+  const charge = await ContributionCharge.findOne({
+    where: { id: chargeId, rootAdminId },
     include: [{ model: Payment, as: "payments" }],
   });
 
@@ -85,18 +93,19 @@ async function refreshChargeStatus(chargeId) {
   return charge;
 }
 
-async function resolvePeriodFromQuery(periodQuery) {
+async function resolvePeriodFromQuery(periodQuery, rootAdminId) {
   if (!periodQuery) {
-    return getCurrentPeriod();
+    return getCurrentPeriod(rootAdminId);
   }
 
   if (/^\d{4}-\d{2}$/.test(periodQuery)) {
     const [year, month] = periodQuery.split("-").map(Number);
-    return getOrCreatePeriod(year, month);
+    return getOrCreatePeriod(year, month, rootAdminId);
   }
 
   return ContributionPeriod.findOne({
     where: {
+      rootAdminId,
       [Op.or]: [{ id: periodQuery }, { label: periodQuery }],
     },
   });

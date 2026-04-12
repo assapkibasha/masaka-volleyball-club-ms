@@ -15,7 +15,7 @@ contributionRouter.use(requireAuth);
 
 contributionRouter.get("/", asyncHandler(async (req, res) => {
   const { period: periodQuery, search, status, page = 1, pageSize = 20 } = req.query;
-  const period = await resolvePeriodFromQuery(periodQuery);
+  const period = await resolvePeriodFromQuery(periodQuery, req.scopeAdminId);
 
   if (!period) {
     const error = new Error("Contribution period not found.");
@@ -30,7 +30,10 @@ contributionRouter.get("/", asyncHandler(async (req, res) => {
     memberWhere.fullName = { [Op.like]: `%${search}%` };
   }
 
-  const chargeWhere = { periodId: period.id };
+  const chargeWhere = { 
+    periodId: period.id,
+    rootAdminId: req.scopeAdminId
+  };
   if (status) {
     chargeWhere.status = status;
   }
@@ -69,7 +72,7 @@ contributionRouter.get("/", asyncHandler(async (req, res) => {
 }));
 
 contributionRouter.get("/summary", asyncHandler(async (req, res) => {
-  const period = await resolvePeriodFromQuery(req.query.period);
+  const period = await resolvePeriodFromQuery(req.query.period, req.scopeAdminId);
 
   if (!period) {
     const error = new Error("Contribution period not found.");
@@ -79,8 +82,8 @@ contributionRouter.get("/summary", asyncHandler(async (req, res) => {
 
   await ensureChargesForActiveMembers(period);
 
-  const charges = await ContributionCharge.findAll({ where: { periodId: period.id } });
-  const payments = await Payment.findAll({ where: { periodId: period.id } });
+  const charges = await ContributionCharge.findAll({ where: { periodId: period.id, rootAdminId: req.scopeAdminId } });
+  const payments = await Payment.findAll({ where: { periodId: period.id, rootAdminId: req.scopeAdminId } });
 
   const expected = charges.reduce((sum, charge) => sum + charge.finalAmountDue, 0);
   const collected = payments.reduce((sum, payment) => sum + payment.amountPaid, 0);
@@ -112,7 +115,9 @@ contributionRouter.post("/payments", asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const member = await Member.findByPk(memberId);
+  const member = await Member.findOne({
+    where: { id: memberId, rootAdminId: req.scopeAdminId }
+  });
   if (!member) {
     const error = new Error("Member not found.");
     error.status = 404;
@@ -121,9 +126,11 @@ contributionRouter.post("/payments", asyncHandler(async (req, res) => {
 
   let period = null;
   if (periodId) {
-    period = await ContributionPeriod.findByPk(periodId);
+    period = await ContributionPeriod.findOne({
+      where: { id: periodId, rootAdminId: req.scopeAdminId }
+    });
   } else {
-    period = await resolvePeriodFromQuery();
+    period = await resolvePeriodFromQuery(null, req.scopeAdminId);
   }
 
   if (!period) {
@@ -134,6 +141,7 @@ contributionRouter.post("/payments", asyncHandler(async (req, res) => {
 
   const charge = await ensureChargeForMember(member, period);
   const payment = await Payment.create({
+    rootAdminId: req.scopeAdminId,
     memberId: member.id,
     periodId: period.id,
     chargeId: charge.id,
@@ -145,7 +153,7 @@ contributionRouter.post("/payments", asyncHandler(async (req, res) => {
     recordedByAdminId: req.user.id,
   });
 
-  await refreshChargeStatus(charge.id);
+  await refreshChargeStatus(charge.id, req.scopeAdminId);
   await logAudit(req.user.id, "payment.create", "payment", payment.id, {
     memberId: member.id,
     periodId: period.id,

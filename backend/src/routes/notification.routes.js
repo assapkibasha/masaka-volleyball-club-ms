@@ -14,7 +14,7 @@ notificationRouter.use(requireAuth);
 
 notificationRouter.get("/", asyncHandler(async (req, res) => {
   const { status, search, memberId, page = 1, pageSize = 20 } = req.query;
-  const where = {};
+  const where = { rootAdminId: req.scopeAdminId };
 
   if (status) {
     where.status = status;
@@ -63,7 +63,9 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const members = await Member.findAll({ where: { id: memberIds } });
+  const members = await Member.findAll({ 
+    where: { id: memberIds, rootAdminId: req.scopeAdminId } 
+  });
 
   // Separate members with and without phone numbers
   const withPhone    = members.filter((m) => m.phone);
@@ -118,6 +120,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
       }
 
       return NotificationLog.create({
+        rootAdminId: req.scopeAdminId,
         memberId: member.id,
         createdByAdminId: req.user.id,
         channel: channel || "sms",
@@ -154,7 +157,9 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
 }));
 
 notificationRouter.post("/:notificationId/resend", asyncHandler(async (req, res) => {
-  const notification = await NotificationLog.findByPk(req.params.notificationId);
+  const notification = await NotificationLog.findOne({
+    where: { id: req.params.notificationId, rootAdminId: req.scopeAdminId }
+  });
 
   if (!notification) {
     const error = new Error("Notification not found.");
@@ -172,7 +177,9 @@ notificationRouter.post("/:notificationId/resend", asyncHandler(async (req, res)
 }));
 
 notificationRouter.post("/:notificationId/cancel", asyncHandler(async (req, res) => {
-  const notification = await NotificationLog.findByPk(req.params.notificationId);
+  const notification = await NotificationLog.findOne({
+    where: { id: req.params.notificationId, rootAdminId: req.scopeAdminId }
+  });
 
   if (!notification) {
     const error = new Error("Notification not found.");

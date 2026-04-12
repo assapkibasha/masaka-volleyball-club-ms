@@ -34,6 +34,8 @@ authRouter.post("/login", asyncHandler(async (req, res) => {
     throw error;
   }
 
+  const scopeAdminId = user.rootAdminId || user.id;
+  user.rootAdminId = scopeAdminId;
   user.lastLoginAt = new Date();
   await user.save();
 
@@ -46,6 +48,51 @@ authRouter.post("/login", asyncHandler(async (req, res) => {
       email: user.email,
       role: user.role,
       status: user.status,
+      rootAdminId: scopeAdminId,
+    },
+  });
+}));
+
+authRouter.post("/register", asyncHandler(async (req, res) => {
+  const { fullName, email, password, phone } = req.body;
+
+  if (!fullName || !email || !password) {
+    const error = new Error("fullName, email, and password are required.");
+    error.status = 400;
+    throw error;
+  }
+
+  const existingUser = await AdminUser.findOne({ where: { email } });
+  if (existingUser) {
+    const error = new Error("An account with that email already exists.");
+    error.status = 409;
+    throw error;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await AdminUser.create({
+    fullName,
+    email,
+    phone: phone || null,
+    passwordHash,
+    role: "admin",
+  });
+
+  user.rootAdminId = user.id;
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  res.status(201);
+  ok(res, {
+    accessToken: signAccessToken(user),
+    refreshToken: signRefreshToken(user),
+    user: {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      rootAdminId: user.rootAdminId,
     },
   });
 }));
@@ -87,6 +134,7 @@ authRouter.get("/me", requireAuth, asyncHandler(async (req, res) => {
     email: req.user.email,
     role: req.user.role,
     status: req.user.status,
+    rootAdminId: req.scopeAdminId,
     lastLoginAt: req.user.lastLoginAt,
   });
 }));

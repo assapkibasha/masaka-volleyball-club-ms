@@ -30,6 +30,10 @@ function defineContributionCharge(sequelize) {
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    rootAdminId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   });
 }
 

@@ -8,6 +8,8 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "check": "node --check src/server.js",
+    "cleanup:seeded-data": "node scripts/cleanup-seeded-data.js",
+    "promote:super-admin": "node scripts/promote-to-super-admin.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:migrate:create": "sequelize-cli migration:generate --name"

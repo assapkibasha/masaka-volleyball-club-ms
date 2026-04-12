@@ -44,6 +44,11 @@ function defineAdminUser(sequelize) {
       type: DataTypes.DATE,
       allowNull: true,
     },
+    rootAdminId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: "ID of the top-level admin who owns this branch",
+    },
   });
 }
 

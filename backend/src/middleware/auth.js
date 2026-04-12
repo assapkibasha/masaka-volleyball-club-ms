@@ -21,7 +21,14 @@ async function requireAuth(req, _res, next) {
       throw error;
     }
 
+    const scopeAdminId = user.rootAdminId || user.id;
+    if (user.rootAdminId !== scopeAdminId) {
+      user.rootAdminId = scopeAdminId;
+      await user.save({ fields: ["rootAdminId"] });
+    }
+
     req.user = user;
+    req.scopeAdminId = scopeAdminId;
     next();
   } catch (error) {
     error.status = error.status || 401;

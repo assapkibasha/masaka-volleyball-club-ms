@@ -12,15 +12,16 @@ const dashboardRouter = express.Router();
 
 dashboardRouter.use(requireAuth);
 
-dashboardRouter.get("/summary", asyncHandler(async (_req, res) => {
-  const currentPeriod = await getCurrentPeriod();
+dashboardRouter.get("/summary", asyncHandler(async (req, res) => {
+  const currentPeriod = await getCurrentPeriod(req.scopeAdminId);
   await ensureChargesForActiveMembers(currentPeriod);
 
   const [totalMembers, charges, recentNotifications] = await Promise.all([
-    Member.count(),
-    ContributionCharge.findAll({ where: { periodId: currentPeriod.id } }),
+    Member.count({ where: { rootAdminId: req.scopeAdminId } }),
+    ContributionCharge.findAll({ where: { periodId: currentPeriod.id, rootAdminId: req.scopeAdminId } }),
     NotificationLog.count({
       where: {
+        rootAdminId: req.scopeAdminId,
         createdAt: {
           [Op.gte]: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         },
@@ -46,7 +47,7 @@ dashboardRouter.get("/summary", asyncHandler(async (_req, res) => {
   });
 
   const paymentTotal = await Payment.sum("amountPaid", {
-    where: { periodId: currentPeriod.id },
+    where: { periodId: currentPeriod.id, rootAdminId: req.scopeAdminId },
   }) || 0;
 
   ok(res, {
@@ -66,8 +67,9 @@ dashboardRouter.get("/summary", asyncHandler(async (_req, res) => {
   });
 }));
 
-dashboardRouter.get("/recent-payments", asyncHandler(async (_req, res) => {
+dashboardRouter.get("/recent-payments", asyncHandler(async (req, res) => {
   const payments = await Payment.findAll({
+    where: { rootAdminId: req.scopeAdminId },
     limit: 10,
     order: [["paymentDate", "DESC"]],
     include: [{ association: "member" }],
