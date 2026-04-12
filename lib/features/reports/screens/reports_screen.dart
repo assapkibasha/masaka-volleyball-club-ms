@@ -722,51 +722,61 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     Color? backgroundColor,
     Color? valueColor,
   }) {
+    final accentColor = leftBorder ?? AppColors.border;
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: backgroundColor ?? AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(color: leftBorder ?? AppColors.border, width: 4),
-          top: const BorderSide(color: AppColors.border),
-          right: const BorderSide(color: AppColors.border),
-          bottom: const BorderSide(color: AppColors.border),
-        ),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: valueColor ?? AppColors.primaryBlack,
-            ),
-          ),
-          if (badge != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              badge,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: badgeColor ?? AppColors.textSecondary,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 4, color: accentColor),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: valueColor ?? AppColors.primaryBlack,
+                      ),
+                    ),
+                    if (badge != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        badge,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: badgeColor ?? AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
