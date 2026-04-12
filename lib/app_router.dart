@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/session/auth_controller.dart';
+import 'features/auth/screens/developer_panel_screen.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/register_admin_screen.dart';
 import 'features/dashboard/screens/dashboard_screen.dart';
 import 'features/members/screens/all_members_screen.dart';
 import 'features/members/screens/member_profile_screen.dart';
@@ -21,13 +23,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: authController,
     redirect: (context, state) {
       final isAuthenticated = authController.isAuthenticated;
-      final isLoginRoute = state.matchedLocation == '/login';
+      final isPublicRoute =
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register';
+      final isDeveloperRoute = state.matchedLocation == '/developer';
+      final isDeveloperUser = authController.user?.role == 'super_admin';
 
-      if (!isAuthenticated && !isLoginRoute) {
+      if (!isAuthenticated && !isPublicRoute) {
         return '/login';
       }
 
-      if (isAuthenticated && isLoginRoute) {
+      if (isAuthenticated && isPublicRoute) {
+        return '/dashboard';
+      }
+
+      if (isDeveloperRoute && !isDeveloperUser) {
         return '/dashboard';
       }
 
@@ -35,19 +45,55 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
-      GoRoute(path: '/members', builder: (context, state) => const AllMembersScreen()),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterAdminScreen(),
+      ),
+      GoRoute(
+        path: '/developer',
+        builder: (context, state) => const DeveloperPanelScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/members',
+        builder: (context, state) => const AllMembersScreen(),
+      ),
       GoRoute(
         path: '/members/:memberId',
-        builder: (context, state) => MemberProfileScreen(memberId: state.pathParameters['memberId']!),
+        builder: (context, state) =>
+            MemberProfileScreen(memberId: state.pathParameters['memberId']!),
       ),
-      GoRoute(path: '/register-member', builder: (context, state) => const RegisterMemberScreen()),
-      GoRoute(path: '/contributions', builder: (context, state) => const ContributionsScreen()),
-      GoRoute(path: '/unpaid-members', builder: (context, state) => const UnpaidMembersScreen()),
-      GoRoute(path: '/notifications', builder: (context, state) => const NotificationsScreen()),
-      GoRoute(path: '/reports', builder: (context, state) => const ReportsScreen()),
-      GoRoute(path: '/messages', builder: (context, state) => const MessagesScreen()),
-      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(
+        path: '/register-member',
+        builder: (context, state) => const RegisterMemberScreen(),
+      ),
+      GoRoute(
+        path: '/contributions',
+        builder: (context, state) => const ContributionsScreen(),
+      ),
+      GoRoute(
+        path: '/unpaid-members',
+        builder: (context, state) => const UnpaidMembersScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportsScreen(),
+      ),
+      GoRoute(
+        path: '/messages',
+        builder: (context, state) => const MessagesScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
     ],
   );
 });

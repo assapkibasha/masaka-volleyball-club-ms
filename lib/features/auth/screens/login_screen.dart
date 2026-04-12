@@ -111,6 +111,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         isLoading: auth.isLoading,
                         isFullWidth: true,
                       ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: auth.isLoading
+                            ? null
+                            : () => context.push('/register'),
+                        child: const Text('Create a new admin account'),
+                      ),
                       if (auth.errorMessage != null) ...[
                         const SizedBox(height: 16),
                         Text(

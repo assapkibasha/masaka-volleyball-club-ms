@@ -252,6 +252,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ],
                             ),
                     ),
+                    const SizedBox(height: 32),
+                    _buildSectionHeader(Icons.logout, 'Account & Session'),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Sign out of your account on this device. This will end your current session.',
+                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Logout'),
+                                    content: const Text('Are you sure you want to logout?'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout', style: TextStyle(color: Colors.red))),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  if (!mounted) return;
+                                  await ref.read(authControllerProvider).logout();
+                                  if (!mounted) return;
+                                  context.go('/login');
+                                }
+                              },
+                              icon: const Icon(Icons.logout),
+                              label: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFF5F5),
+                                foregroundColor: Colors.red,
+                                elevation: 0,
+                                side: const BorderSide(color: Color(0xFFFEB2B2)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

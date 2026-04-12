@@ -7,7 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('sharedPreferencesProvider must be overridden in main()');
+  throw UnimplementedError(
+    'sharedPreferencesProvider must be overridden in main()',
+  );
 });
 
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
@@ -45,20 +47,20 @@ class AuthUser {
   final String status;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'fullName': fullName,
-        'email': email,
-        'role': role,
-        'status': status,
-      };
+    'id': id,
+    'fullName': fullName,
+    'email': email,
+    'role': role,
+    'status': status,
+  };
 }
 
 class AuthController extends ChangeNotifier {
   AuthController({
     required SharedPreferences prefs,
     required ApiClient apiClient,
-  })  : _prefs = prefs,
-        _apiClient = apiClient {
+  }) : _prefs = prefs,
+       _apiClient = apiClient {
     _token = _prefs.getString(_tokenKey);
     _refreshToken = _prefs.getString(_refreshTokenKey);
     final userJson = _prefs.getString(_userKey);
@@ -69,16 +71,14 @@ class AuthController extends ChangeNotifier {
     _apiClient.configureAuth(
       readAccessToken: () => _token,
       readRefreshToken: () => _refreshToken,
-      writeTokens: ({
-        required String accessToken,
-        required String refreshToken,
-      }) async {
-        _token = accessToken;
-        _refreshToken = refreshToken;
-        await _prefs.setString(_tokenKey, accessToken);
-        await _prefs.setString(_refreshTokenKey, refreshToken);
-        notifyListeners();
-      },
+      writeTokens:
+          ({required String accessToken, required String refreshToken}) async {
+            _token = accessToken;
+            _refreshToken = refreshToken;
+            await _prefs.setString(_tokenKey, accessToken);
+            await _prefs.setString(_refreshTokenKey, refreshToken);
+            notifyListeners();
+          },
       onAuthFailure: () async {
         await logout(notify: true);
       },
@@ -105,25 +105,41 @@ class AuthController extends ChangeNotifier {
   AuthUser? get user => _user;
   String? get errorMessage => _errorMessage;
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final data = await _apiClient.login(email: email, password: password);
-      final userData = data['user'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      await _storeAuthState(data);
+    } on ApiException catch (error) {
+      _errorMessage = error.message;
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
-      _token = data['accessToken'] as String?;
-      _refreshToken = data['refreshToken'] as String?;
-      _user = AuthUser.fromJson(userData);
+  Future<void> register({
+    required String fullName,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
-      await _prefs.setString(_tokenKey, _token ?? '');
-      await _prefs.setString(_refreshTokenKey, _refreshToken ?? '');
-      await _prefs.setString(_userKey, jsonEncode(_user?.toJson() ?? <String, dynamic>{}));
+    try {
+      final data = await _apiClient.register(
+        fullName: fullName,
+        email: email,
+        password: password,
+        phone: phone,
+      );
+      await _storeAuthState(data);
     } on ApiException catch (error) {
       _errorMessage = error.message;
       rethrow;
@@ -134,16 +150,41 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> logout({bool notify = true}) async {
-    _token = null;
-    _refreshToken = null;
-    _user = null;
-    _errorMessage = null;
+    try {
+      if (_token != null) {
+        await _apiClient.logout(_token!);
+      }
+    } catch (e) {
+      debugPrint('Logout error: $e');
+    } finally {
+      _token = null;
+      _refreshToken = null;
+      _user = null;
+      _errorMessage = null;
 
-    await _prefs.remove(_tokenKey);
-    await _prefs.remove(_refreshTokenKey);
-    await _prefs.remove(_userKey);
-    if (notify) {
-      notifyListeners();
+      await _prefs.remove(_tokenKey);
+      await _prefs.remove(_refreshTokenKey);
+      await _prefs.remove(_userKey);
+
+      if (notify) {
+        notifyListeners();
+      }
     }
+  }
+
+  Future<void> _storeAuthState(Map<String, dynamic> data) async {
+    final userData =
+        data['user'] as Map<String, dynamic>? ?? <String, dynamic>{};
+
+    _token = data['accessToken'] as String?;
+    _refreshToken = data['refreshToken'] as String?;
+    _user = AuthUser.fromJson(userData);
+
+    await _prefs.setString(_tokenKey, _token ?? '');
+    await _prefs.setString(_refreshTokenKey, _refreshToken ?? '');
+    await _prefs.setString(
+      _userKey,
+      jsonEncode(_user?.toJson() ?? <String, dynamic>{}),
+    );
   }
 }

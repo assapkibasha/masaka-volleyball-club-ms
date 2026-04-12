@@ -61,10 +61,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: AppColors.primaryYellow,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.sports_volleyball, color: AppColors.primaryBlack, size: 20),
+              child: const Icon(
+                Icons.sports_volleyball,
+                color: AppColors.primaryBlack,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
-            const Text('MVCS', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+            const Text(
+              'MVCS',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -73,7 +84,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: const Badge(
               backgroundColor: Colors.red,
               smallSize: 8,
-              child: Icon(Icons.notifications_outlined, color: AppColors.textSecondary),
+              child: Icon(
+                Icons.notifications_outlined,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           PopupMenuButton<String>(
@@ -82,18 +96,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               backgroundColor: AppColors.primaryYellow,
               child: Text(
                 _initials(auth.user?.fullName ?? 'MV'),
-                style: const TextStyle(color: AppColors.primaryBlack, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: AppColors.primaryBlack,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             onSelected: (value) async {
+              if (value == 'developer') {
+                context.go('/developer');
+                return;
+              }
               if (value == 'logout') {
                 await ref.read(authControllerProvider).logout();
                 if (!context.mounted) return;
                 context.go('/login');
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'logout', child: Text('Logout')),
+            itemBuilder: (context) => [
+              if (auth.user?.role == 'super_admin')
+                const PopupMenuItem(
+                  value: 'developer',
+                  child: Text('Developer Panel'),
+                ),
+              const PopupMenuItem(value: 'logout', child: Text('Logout')),
             ],
           ),
           const SizedBox(width: 8),
@@ -113,9 +139,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                    Text(
+                      snapshot.error.toString(),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
-                    ElevatedButton(onPressed: _refresh, child: const Text('Retry')),
+                    ElevatedButton(
+                      onPressed: _refresh,
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
               ),
@@ -129,18 +161,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onRefresh: _refresh,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(top: 24, left: 16, right: 16, bottom: 100),
+              padding: const EdgeInsets.only(
+                top: 24,
+                left: 16,
+                right: 16,
+                bottom: 100,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
                     'MVCS',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primaryBlack),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryBlack,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Welcome back, ${auth.user?.fullName ?? 'Administrator'}',
-                    style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _buildSummaryCards(summary),
@@ -157,7 +201,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/register-member'),
         backgroundColor: AppColors.primaryBlack,
-        shape: const CircleBorder(side: BorderSide(color: AppColors.white, width: 4)),
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.white, width: 4),
+        ),
         elevation: 4,
         child: const Icon(Icons.add, color: AppColors.primaryYellow, size: 28),
       ),
@@ -239,7 +285,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         border: backgroundColor == AppColors.white
             ? Border.all(color: AppColors.border)
             : Border.all(color: AppColors.primaryYellow.withValues(alpha: 0.2)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,14 +302,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Icon(icon, color: iconColor),
               if (badgeText != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(12)),
-                  child: Text(badgeText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeTextColor)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: badgeTextColor,
+                    ),
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
           const SizedBox(height: 2),
           Text(
             label,
@@ -265,7 +337,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               fontSize: 10,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
-              color: backgroundColor == AppColors.white ? AppColors.textSecondary : textColor.withValues(alpha: 0.8),
+              color: backgroundColor == AppColors.white
+                  ? AppColors.textSecondary
+                  : textColor.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -274,7 +348,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildMonthlyProgress(Map<String, dynamic> summary) {
-    final progressPercent = (summary['progressPercent'] as int? ?? 0).clamp(0, 100);
+    final progressPercent = (summary['progressPercent'] as int? ?? 0).clamp(
+      0,
+      100,
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -289,7 +366,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Monthly Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text(
+                'Monthly Progress',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -298,7 +378,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 child: Text(
                   'Target: ${_formattedMoney(summary['expectedTotal'])}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primaryBlack),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryBlack,
+                  ),
                 ),
               ),
             ],
@@ -309,9 +393,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               Text(
                 'Collected: ${_formattedMoney(summary['collectedTotal'])}',
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
-              Text('$progressPercent%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(
+                '$progressPercent%',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -321,7 +414,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               value: progressPercent / 100,
               minHeight: 12,
               backgroundColor: AppColors.backgroundLight,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryYellow),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primaryYellow,
+              ),
             ),
           ),
         ],
@@ -335,10 +430,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Recent Payments', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Recent Payments',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             TextButton(
               onPressed: () => context.go('/contributions'),
-              child: const Text('VIEW ALL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+              child: const Text(
+                'VIEW ALL',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
           ],
         ),
@@ -351,13 +456,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: recentPayments.isEmpty
               ? const Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text('No recent payments found.', style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text(
+                    'No recent payments found.',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                 )
               : Column(
                   children: [
-                    for (var index = 0; index < recentPayments.length; index++) ...[
-                      _buildPaymentItem(recentPayments[index] as Map<String, dynamic>),
-                      if (index < recentPayments.length - 1) const Divider(height: 1, color: AppColors.divider),
+                    for (
+                      var index = 0;
+                      index < recentPayments.length;
+                      index++
+                    ) ...[
+                      _buildPaymentItem(
+                        recentPayments[index] as Map<String, dynamic>,
+                      ),
+                      if (index < recentPayments.length - 1)
+                        const Divider(height: 1, color: AppColors.divider),
                     ],
                   ],
                 ),
@@ -381,16 +496,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.backgroundLight,
-                child: Text(_initials(memberName), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                child: Text(
+                  _initials(memberName),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(memberName, style: const TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                    date == null ? 'Unknown date' : DateFormat('dd MMM, yyyy • hh:mm a').format(date.toLocal()),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    memberName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    date == null
+                        ? 'Unknown date'
+                        : DateFormat(
+                            'dd MMM, yyyy • hh:mm a',
+                          ).format(date.toLocal()),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -399,11 +530,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                amount,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(4)),
-                child: Text('PAID', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green.shade700)),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'PAID',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
+                  ),
+                ),
               ),
             ],
           ),
@@ -427,10 +574,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 }
 
 class _DashboardData {
-  const _DashboardData({
-    required this.summary,
-    required this.recentPayments,
-  });
+  const _DashboardData({required this.summary, required this.recentPayments});
 
   final Map<String, dynamic> summary;
   final List<dynamic> recentPayments;

@@ -5,10 +5,11 @@ import 'package:http/http.dart' as http;
 
 typedef JsonMap = Map<String, dynamic>;
 typedef TokenReader = String? Function();
-typedef TokenWriter = Future<void> Function({
-  required String accessToken,
-  required String refreshToken,
-});
+typedef TokenWriter =
+    Future<void> Function({
+      required String accessToken,
+      required String refreshToken,
+    });
 typedef AuthFailureHandler = Future<void> Function();
 
 class ApiException implements Exception {
@@ -61,22 +62,36 @@ class ApiClient {
     _handleAuthFailure = onAuthFailure;
   }
 
-  Future<JsonMap> login({
+  Future<JsonMap> login({required String email, required String password}) {
+    return _post('/auth/login', body: {'email': email, 'password': password});
+  }
+
+  Future<JsonMap> register({
+    required String fullName,
     required String email,
     required String password,
+    String? phone,
   }) {
     return _post(
-      '/auth/login',
+      '/auth/register',
       body: {
+        'fullName': fullName,
         'email': email,
         'password': password,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
       },
     );
   }
 
-  Future<JsonMap> getDashboardSummary(String token) => _get('/dashboard/summary', token: token);
+  Future<void> logout(String token) async {
+    await _post('/auth/logout', token: token);
+  }
 
-  Future<List<dynamic>> getRecentPayments(String token) => _getList('/dashboard/recent-payments', token: token);
+  Future<JsonMap> getDashboardSummary(String token) =>
+      _get('/dashboard/summary', token: token);
+
+  Future<List<dynamic>> getRecentPayments(String token) =>
+      _getList('/dashboard/recent-payments', token: token);
 
   Future<List<dynamic>> getMembers(
     String token, {
@@ -95,15 +110,23 @@ class ApiClient {
     );
   }
 
-  Future<JsonMap> getMember(String token, String memberId) => _get('/members/$memberId', token: token);
+  Future<JsonMap> getMember(String token, String memberId) =>
+      _get('/members/$memberId', token: token);
 
-  Future<JsonMap> updateMember(String token, String memberId, JsonMap payload) => _patch('/members/$memberId', token: token, body: payload);
+  Future<JsonMap> updateMember(
+    String token,
+    String memberId,
+    JsonMap payload,
+  ) => _patch('/members/$memberId', token: token, body: payload);
 
-  Future<List<dynamic>> getMemberContributions(String token, String memberId) => _getList('/members/$memberId/contributions', token: token);
+  Future<List<dynamic>> getMemberContributions(String token, String memberId) =>
+      _getList('/members/$memberId/contributions', token: token);
 
-  Future<JsonMap> createMember(String token, JsonMap payload) => _post('/members', token: token, body: payload);
+  Future<JsonMap> createMember(String token, JsonMap payload) =>
+      _post('/members', token: token, body: payload);
 
-  Future<List<dynamic>> getPeriods(String token) => _getList('/periods', token: token);
+  Future<List<dynamic>> getPeriods(String token) =>
+      _getList('/periods', token: token);
 
   Future<JsonMap> getContributionSummary(String token, {String? period}) {
     return _get(
@@ -132,15 +155,14 @@ class ApiClient {
     );
   }
 
-  Future<JsonMap> recordPayment(String token, JsonMap payload) => _post('/contributions/payments', token: token, body: payload);
+  Future<JsonMap> recordPayment(String token, JsonMap payload) =>
+      _post('/contributions/payments', token: token, body: payload);
 
   Future<List<dynamic>> getUnpaidMembers(String token, {String? role}) {
     return _getList(
       '/members/unpaid',
       token: token,
-      queryParameters: {
-        if (role != null && role.isNotEmpty) 'role': role,
-      },
+      queryParameters: {if (role != null && role.isNotEmpty) 'role': role},
     );
   }
 
@@ -190,7 +212,10 @@ class ApiClient {
     final body = _decode(response);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_extractErrorMessage(body), statusCode: response.statusCode);
+      throw ApiException(
+        _extractErrorMessage(body),
+        statusCode: response.statusCode,
+      );
     }
 
     // The production server returns { data: [ ...notifications ] }  (array)
@@ -206,14 +231,35 @@ class ApiClient {
   }
 
   Future<JsonMap> getYearlyReport(String token, int year) {
-    return _get('/reports/yearly', token: token, queryParameters: {'year': '$year'});
+    return _get(
+      '/reports/yearly',
+      token: token,
+      queryParameters: {'year': '$year'},
+    );
   }
 
   Future<JsonMap> getSettings(String token) => _get('/settings', token: token);
 
-  Future<List<dynamic>> updateSettings(String token, JsonMap payload) => _patchList('/settings', token: token, body: payload);
+  Future<List<dynamic>> updateSettings(String token, JsonMap payload) =>
+      _patchList('/settings', token: token, body: payload);
 
-  Future<List<dynamic>> getAdmins(String token) => _getList('/admins', token: token);
+  Future<List<dynamic>> getAdmins(String token) =>
+      _getList('/admins', token: token);
+
+  Future<JsonMap> getPlatformOverview(String token) =>
+      _get('/platform/overview', token: token);
+
+  Future<List<dynamic>> getPlatformAccounts(String token) =>
+      _getList('/platform/accounts', token: token);
+
+  Future<JsonMap> createPlatformAccount(String token, JsonMap payload) =>
+      _post('/platform/accounts', token: token, body: payload);
+
+  Future<JsonMap> updatePlatformAccount(
+    String token,
+    String accountId,
+    JsonMap payload,
+  ) => _patch('/platform/accounts/$accountId', token: token, body: payload);
 
   Future<JsonMap> _get(
     String path, {
@@ -245,11 +291,7 @@ class ApiClient {
     return _extractDataList(response, body);
   }
 
-  Future<JsonMap> _post(
-    String path, {
-    String? token,
-    Object? body,
-  }) async {
+  Future<JsonMap> _post(String path, {String? token, Object? body}) async {
     final response = await _sendWithAuthRetry(
       () => _client.post(
         _buildUri(path, null),
@@ -278,11 +320,7 @@ class ApiClient {
     return _extractDataList(response, decoded);
   }
 
-  Future<JsonMap> _patch(
-    String path, {
-    String? token,
-    Object? body,
-  }) async {
+  Future<JsonMap> _patch(String path, {String? token, Object? body}) async {
     final response = await _sendWithAuthRetry(
       () => _client.patch(
         _buildUri(path, null),
@@ -306,7 +344,10 @@ class ApiClient {
 
     final body = _tryDecode(response);
     final message = _extractErrorMessage(body);
-    final shouldRefresh = message.toLowerCase().contains('jwt expired') || message.toLowerCase().contains('authentication required') || message.toLowerCase().contains('user is not authorized');
+    final shouldRefresh =
+        message.toLowerCase().contains('jwt expired') ||
+        message.toLowerCase().contains('authentication required') ||
+        message.toLowerCase().contains('user is not authorized');
 
     if (!shouldRefresh) {
       return response;
@@ -346,7 +387,10 @@ class ApiClient {
 
     final accessToken = data['accessToken'] as String?;
     final newRefreshToken = data['refreshToken'] as String?;
-    if (accessToken == null || accessToken.isEmpty || newRefreshToken == null || newRefreshToken.isEmpty) {
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        newRefreshToken == null ||
+        newRefreshToken.isEmpty) {
       return false;
     }
 
@@ -359,7 +403,11 @@ class ApiClient {
 
   Uri _buildUri(String path, Map<String, String>? queryParameters) {
     final uri = Uri.parse('$baseUrl$path');
-    return uri.replace(queryParameters: queryParameters == null || queryParameters.isEmpty ? null : queryParameters);
+    return uri.replace(
+      queryParameters: queryParameters == null || queryParameters.isEmpty
+          ? null
+          : queryParameters,
+    );
   }
 
   Map<String, String> _headers(String? token) {
@@ -381,7 +429,10 @@ class ApiClient {
     try {
       return jsonDecode(response.body);
     } catch (_) {
-      throw ApiException('Invalid server response.', statusCode: response.statusCode);
+      throw ApiException(
+        'Invalid server response.',
+        statusCode: response.statusCode,
+      );
     }
   }
 
@@ -395,7 +446,10 @@ class ApiClient {
 
   JsonMap _extractDataMap(http.Response response, dynamic body) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_extractErrorMessage(body), statusCode: response.statusCode);
+      throw ApiException(
+        _extractErrorMessage(body),
+        statusCode: response.statusCode,
+      );
     }
 
     final data = body['data'];
@@ -403,12 +457,18 @@ class ApiClient {
       return data;
     }
 
-    throw ApiException('Unexpected data format.', statusCode: response.statusCode);
+    throw ApiException(
+      'Unexpected data format.',
+      statusCode: response.statusCode,
+    );
   }
 
   List<dynamic> _extractDataList(http.Response response, dynamic body) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_extractErrorMessage(body), statusCode: response.statusCode);
+      throw ApiException(
+        _extractErrorMessage(body),
+        statusCode: response.statusCode,
+      );
     }
 
     final data = body['data'];
@@ -416,7 +476,10 @@ class ApiClient {
       return data;
     }
 
-    throw ApiException('Unexpected data format.', statusCode: response.statusCode);
+    throw ApiException(
+      'Unexpected data format.',
+      statusCode: response.statusCode,
+    );
   }
 
   String _extractErrorMessage(dynamic body) {
