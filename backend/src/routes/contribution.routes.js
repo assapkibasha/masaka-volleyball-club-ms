@@ -27,7 +27,12 @@ contributionRouter.get("/", asyncHandler(async (req, res) => {
 
   const memberWhere = {};
   if (search) {
-    memberWhere.fullName = { [Op.like]: `%${search}%` };
+    memberWhere[Op.or] = [
+      { fullName: { [Op.like]: `%${search}%` } },
+      { phone: { [Op.like]: `%${search}%` } },
+      { email: { [Op.like]: `%${search}%` } },
+      { memberNumber: { [Op.like]: `%${search}%` } },
+    ];
   }
 
   const chargeWhere = { 

@@ -1,10 +1,12 @@
 const express = require("express");
+const { Op } = require("sequelize");
 
 const { requireAuth } = require("../middleware/auth");
 const { asyncHandler } = require("../utils/async-handler");
 const { ok } = require("../utils/response");
-const { ContributionPeriod, ContributionCharge, Payment } = require("../models");
+const { ContributionPeriod, ContributionCharge, Payment, Member } = require("../models");
 const { toCurrencyBreakdown } = require("../utils/contributions");
+const { resolvePeriodFromQuery, ensureChargesForActiveMembers } = require("../services/period-service");
 
 const reportRouter = express.Router();
 
@@ -62,6 +64,69 @@ reportRouter.get("/yearly", asyncHandler(async (req, res) => {
       efficiencyRate: item.efficiencyRate,
     })),
     topMonths,
+  });
+}));
+
+reportRouter.get("/monthly", asyncHandler(async (req, res) => {
+  const period = await resolvePeriodFromQuery(req.query.period, req.scopeAdminId);
+
+  if (!period) {
+    const error = new Error("Contribution period not found.");
+    error.status = 404;
+    throw error;
+  }
+
+  await ensureChargesForActiveMembers(period);
+
+  const charges = await ContributionCharge.findAll({
+    where: { periodId: period.id, rootAdminId: req.scopeAdminId },
+    include: [
+      { association: "member" },
+      { association: "payments" },
+    ],
+    order: [[{ model: Member, as: "member" }, "fullName", "ASC"]],
+  });
+
+  const expectedTotal = charges.reduce((sum, charge) => sum + charge.finalAmountDue, 0);
+  const collectedTotal = charges.reduce(
+    (sum, charge) => sum + charge.payments.reduce((paymentSum, payment) => paymentSum + payment.amountPaid, 0),
+    0,
+  );
+
+  const paidMembers = [];
+  const peopleToPay = [];
+
+  for (const charge of charges) {
+    const totalPaid = charge.payments.reduce((sum, payment) => sum + payment.amountPaid, 0);
+    const balance = Math.max(charge.finalAmountDue - totalPaid, 0);
+    const item = {
+      memberId: charge.memberId,
+      memberName: charge.member ? charge.member.fullName : "Unknown member",
+      phone: charge.member ? charge.member.phone : null,
+      email: charge.member ? charge.member.email : null,
+      expectedAmount: toCurrencyBreakdown(charge.finalAmountDue),
+      paidAmount: toCurrencyBreakdown(totalPaid),
+      balance: toCurrencyBreakdown(balance),
+      status: charge.status,
+    };
+
+    if (charge.status === "paid") {
+      paidMembers.push(item);
+    } else {
+      peopleToPay.push(item);
+    }
+  }
+
+  ok(res, {
+    period: period.label,
+    generatedAt: new Date().toISOString(),
+    expectedTotal: toCurrencyBreakdown(expectedTotal),
+    collectedTotal: toCurrencyBreakdown(collectedTotal),
+    outstandingTotal: toCurrencyBreakdown(Math.max(expectedTotal - collectedTotal, 0)),
+    paidPeopleCount: paidMembers.length,
+    peopleToPayCount: peopleToPay.length,
+    paidMembers,
+    peopleToPay,
   });
 }));
 

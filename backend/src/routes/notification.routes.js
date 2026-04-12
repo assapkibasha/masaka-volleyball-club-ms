@@ -25,7 +25,12 @@ notificationRouter.get("/", asyncHandler(async (req, res) => {
 
   const memberWhere = {};
   if (search) {
-    memberWhere.fullName = { [Op.like]: `%${search}%` };
+    memberWhere[Op.or] = [
+      { fullName: { [Op.like]: `%${search}%` } },
+      { phone: { [Op.like]: `%${search}%` } },
+      { email: { [Op.like]: `%${search}%` } },
+      { memberNumber: { [Op.like]: `%${search}%` } },
+    ];
   }
 
   const result = await NotificationLog.findAndCountAll({
@@ -40,6 +45,7 @@ notificationRouter.get("/", asyncHandler(async (req, res) => {
     id: row.id,
     memberId: row.memberId,
     memberName: row.member ? row.member.fullName : null,
+    memberPhone: row.member ? row.member.phone : null,
     title: row.title,
     message: row.message,
     channel: row.channel,
@@ -72,7 +78,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
   const withoutPhone = members.filter((m) => !m.phone);
 
   // Build a per-recipient status map from the BulkSMS response
-  const smsStatusMap = {}; // phone -> { status, messageId, errorMessage }
+  const smsStatusMap = {}; // phone -> { status, messageId, errorMessage, providerStatus }
 
   if (withPhone.length > 0) {
     try {
@@ -83,9 +89,10 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
       for (const r of smsResult.results) {
         const normalized = r.recipient.replace(/^\+/, "");
         smsStatusMap[normalized] = {
-          status: r.status === "sent" ? "delivered" : "failed",
+          status: r.status === "failed" ? "failed" : "pending",
           messageId: r.messageid,
-          errorMessage: r.status !== "sent" ? `BulkSMS status: ${r.status}` : null,
+          providerStatus: r.status || null,
+          errorMessage: r.status === "failed" ? `BulkSMS status: ${r.status}` : null,
         };
       }
     } catch (smsError) {
@@ -95,6 +102,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
         smsStatusMap[normalized] = {
           status: "failed",
           messageId: null,
+          providerStatus: null,
           errorMessage: smsError.message,
         };
       }
@@ -110,6 +118,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
 
       let status = "delivered";
       let errorMessage = null;
+      let providerMessageId = null;
 
       if (!member.phone) {
         status = "failed";
@@ -117,6 +126,9 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
       } else if (smsInfo) {
         status = smsInfo.status;
         errorMessage = smsInfo.errorMessage || null;
+        providerMessageId = smsInfo.messageId || null;
+      } else {
+        status = "pending";
       }
 
       return NotificationLog.create({
@@ -127,6 +139,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
         title,
         message,
         status,
+        providerMessageId,
         sentAt: now,
         errorMessage,
       });
@@ -136,12 +149,27 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
   await logAudit(req.user.id, "notification.send", "notification", null, {
     count: notifications.length,
     sent: notifications.filter((n) => n.status === "delivered").length,
+    pending: notifications.filter((n) => n.status === "pending").length,
     failed: notifications.filter((n) => n.status === "failed").length,
   });
 
   res.status(201);
-  const sentNotifications   = notifications.filter((n) => n.status === "delivered");
+  const sentNotifications = notifications.filter((n) => n.status === "delivered");
+  const pendingNotifications = notifications.filter((n) => n.status === "pending");
   const failedNotifications = notifications.filter((n) => n.status === "failed");
+  const recipients = notifications.map((notification) => {
+    const member = members.find((item) => item.id === notification.memberId);
+    return {
+      id: notification.id,
+      memberId: notification.memberId,
+      memberName: member ? member.fullName : null,
+      memberPhone: member ? member.phone : null,
+      status: notification.status,
+      providerMessageId: notification.providerMessageId,
+      errorMessage: notification.errorMessage,
+      sentAt: notification.sentAt,
+    };
+  });
 
   // Collect unique error messages for the Flutter client to display
   const errors = [...new Set(
@@ -151,8 +179,10 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
   ok(res, {
     total: notifications.length,
     sent: sentNotifications.length,
+    pending: pendingNotifications.length,
     failed: failedNotifications.length,
     errors,
+    recipients,
   });
 }));
 
