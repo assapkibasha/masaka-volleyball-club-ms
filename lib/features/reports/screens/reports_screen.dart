@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/printing/report_printer.dart';
 import '../../../core/session/auth_controller.dart';
@@ -37,8 +38,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
     final yearly = await api.getYearlyReport(token, int.parse(_selectedYear));
     final monthly = await api.getMonthlyReport(token, period: _selectedPeriod);
+    final recentPayments = await api.getRecentPaymentsReport(token, limit: 10);
 
-    return _ReportsData(periods: periods, yearly: yearly, monthly: monthly);
+    return _ReportsData(
+      periods: periods,
+      yearly: yearly,
+      monthly: monthly,
+      recentPayments: recentPayments,
+    );
   }
 
   Future<void> _refresh() async {
@@ -52,6 +59,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Future<void> _printMonthlyReport(Map<String, dynamic> report) async {
     try {
       await printMonthlyReport(report);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Future<void> _printRecentPaymentsReport(Map<String, dynamic> report) async {
+    try {
+      await printRecentPaymentsReport(report);
     } catch (error) {
       if (!mounted) {
         return;
@@ -138,6 +158,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           final data = snapshot.data!;
           final yearly = data.yearly;
           final monthly = data.monthly;
+          final recentPayments = data.recentPayments;
           final monthlySeries =
               (yearly['monthlySeries'] as List<dynamic>? ?? const []);
 
@@ -186,6 +207,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     ),
                     const SizedBox(height: 20),
                     _buildPrintableReportCard(data.periods, monthly),
+                    const SizedBox(height: 20),
+                    _buildRecentPaymentsReportCard(recentPayments),
                     const SizedBox(height: 20),
                     _buildTrendsChart(monthlySeries),
                   ],
@@ -342,6 +365,347 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: AppColors.primaryBlack,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentPaymentsReportCard(Map<String, dynamic> report) {
+    final payments = report['payments'] as List<dynamic>? ?? const [];
+    final generatedAt = DateTime.tryParse(
+      report['generatedAt'] as String? ?? '',
+    );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RECENT PAYMENTS REPORT',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primaryBlack,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Printable table of the latest recorded payments',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _printRecentPaymentsReport(report),
+                icon: const Icon(Icons.print, size: 18),
+                label: const Text('Print'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlack,
+                  foregroundColor: AppColors.primaryYellow,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Date: ${generatedAt == null ? '-' : DateFormat('dd MMM yyyy').format(generatedAt.toLocal())}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Organization: ${report['organization'] as String? ?? 'Masaka Volleyball Club'}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Payments',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (payments.isEmpty)
+            const Text(
+              'No recent payments available.',
+              style: TextStyle(color: AppColors.textSecondary),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryBlack,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(11),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        SizedBox(
+                          width: 48,
+                          child: Text(
+                            'ID',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            'Member Name',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Amount (RWF)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'Status',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Date',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'Time',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...payments.map((raw) {
+                    final item = raw as Map<String, dynamic>;
+                    final paymentDate = DateTime.tryParse(
+                      item['paymentDate'] as String? ?? '',
+                    );
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: AppColors.border),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              item['id'] as String? ?? '-',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              item['memberName'] as String? ?? 'Unknown',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryBlack,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              _money(item['amountPaid']),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              item['status'] as String? ?? 'Paid',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              paymentDate == null
+                                  ? '-'
+                                  : DateFormat(
+                                      'dd MMM yyyy',
+                                    ).format(paymentDate.toLocal()),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primaryBlack,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              paymentDate == null
+                                  ? '-'
+                                  : DateFormat(
+                                      'hh:mm a',
+                                    ).format(paymentDate.toLocal()),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primaryBlack,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          const SizedBox(height: 14),
+          const Text(
+            'TOTAL',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                _buildMetricRow(
+                  'Total Payments',
+                  '${report['totalPayments'] ?? 0}',
+                ),
+                const Divider(height: 1, color: AppColors.border),
+                _buildMetricRow(
+                  'Total Amount Collected',
+                  _money(report['totalAmountCollected']),
+                  valueColor: Colors.green.shade700,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Generated by MVCS, a product of Higura Ventures',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryBlack,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: valueColor ?? AppColors.primaryBlack,
             ),
           ),
         ],
@@ -538,9 +902,11 @@ class _ReportsData {
     required this.periods,
     required this.yearly,
     required this.monthly,
+    required this.recentPayments,
   });
 
   final List<dynamic> periods;
   final Map<String, dynamic> yearly;
   final Map<String, dynamic> monthly;
+  final Map<String, dynamic> recentPayments;
 }

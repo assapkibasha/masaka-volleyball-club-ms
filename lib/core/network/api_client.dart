@@ -260,6 +260,14 @@ class ApiClient {
     );
   }
 
+  Future<JsonMap> getRecentPaymentsReport(String token, {int? limit}) {
+    return _get(
+      '/reports/recent-payments',
+      token: token,
+      queryParameters: {if (limit != null) 'limit': '$limit'},
+    );
+  }
+
   Future<JsonMap> getSettings(String token) => _get('/settings', token: token);
 
   Future<List<dynamic>> updateSettings(String token, JsonMap payload) =>
