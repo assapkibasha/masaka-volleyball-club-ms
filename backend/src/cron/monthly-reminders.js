@@ -58,7 +58,7 @@ function initMonthlyReminders() {
             smsStatusMap[normalized] = {
               status: r.status === "failed" ? "failed" : "pending", // typically pending or queued initially
               messageId: r.messageid,
-              errorMessage: r.status === "failed" ? `Status: ${r.status}` : null,
+              errorMessage: r.status === "failed" ? r.error || `Status: ${r.status}` : null,
             };
           }
         } catch (error) {
@@ -75,10 +75,10 @@ function initMonthlyReminders() {
 
         // 7. Log the notifications so admins can see them in the UI
         const now = new Date();
-        for (const member of membersToRemind) {
+        await NotificationLog.bulkCreate(membersToRemind.map((member) => {
           const normalized = (member.phone || "").replace(/\s+/g, "").replace(/^\+/, "");
           const smsInfo = smsStatusMap[normalized];
-          
+
           let status = "pending";
           let errorMessage = null;
           let providerMessageId = null;
@@ -89,7 +89,7 @@ function initMonthlyReminders() {
             providerMessageId = smsInfo.messageId;
           }
 
-          await NotificationLog.create({
+          return {
             rootAdminId,
             memberId: member.id,
             createdByAdminId: rootAdminId, // Use the system/super_admin ID as the creator
@@ -100,8 +100,8 @@ function initMonthlyReminders() {
             providerMessageId,
             sentAt: now,
             errorMessage,
-          });
-        }
+          };
+        }));
       }
       console.log("[CRON] Automated monthly reminders job completed successfully.");
     } catch (error) {
