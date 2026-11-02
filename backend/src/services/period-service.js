@@ -70,10 +70,33 @@ async function ensureChargeForMember(member, period) {
 }
 
 async function ensureChargesForActiveMembers(period) {
-  const members = await Member.findAll({ 
-    where: { status: "active", rootAdminId: period.rootAdminId } 
-  });
-  await Promise.all(members.map((member) => ensureChargeForMember(member, period)));
+  const { rootAdminId } = period;
+  const [members, existingCharges] = await Promise.all([
+    Member.findAll({
+      attributes: ["id", "monthlyContributionAmount"],
+      where: { status: "active", rootAdminId },
+    }),
+    ContributionCharge.findAll({
+      attributes: ["memberId"],
+      where: { periodId: period.id, rootAdminId },
+    }),
+  ]);
+
+  const chargedMemberIds = new Set(existingCharges.map((charge) => charge.memberId));
+  const missingCharges = members
+    .filter((member) => !chargedMemberIds.has(member.id))
+    .map((member) => ({
+      rootAdminId,
+      memberId: member.id,
+      periodId: period.id,
+      expectedAmount: member.monthlyContributionAmount,
+      finalAmountDue: member.monthlyContributionAmount,
+      status: "unpaid",
+    }));
+
+  if (missingCharges.length > 0) {
+    await ContributionCharge.bulkCreate(missingCharges);
+  }
 }
 
 async function refreshChargeStatus(chargeId, rootAdminId) {
