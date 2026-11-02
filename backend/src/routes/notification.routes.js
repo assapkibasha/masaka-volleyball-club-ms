@@ -60,6 +60,17 @@ notificationRouter.get("/", asyncHandler(async (req, res) => {
   });
 }));
 
+notificationRouter.get("/member-ids", asyncHandler(async (req, res) => {
+  const rows = await NotificationLog.findAll({
+    attributes: ["memberId"],
+    where: { rootAdminId: req.scopeAdminId, memberId: { [Op.ne]: null } },
+    group: ["memberId"],
+    raw: true,
+  });
+
+  ok(res, rows.map((row) => row.memberId));
+}));
+
 notificationRouter.post("/send", asyncHandler(async (req, res) => {
   const { memberIds, channel, title, message } = req.body;
 
@@ -92,7 +103,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
           status: r.status === "failed" ? "failed" : "pending",
           messageId: r.messageid,
           providerStatus: r.status || null,
-          errorMessage: r.status === "failed" ? `BulkSMS status: ${r.status}` : null,
+          errorMessage: r.status === "failed" ? r.error || `BulkSMS status: ${r.status}` : null,
         };
       }
     } catch (smsError) {
@@ -111,7 +122,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
 
   // Create notification logs for all members
   const now = new Date();
-  const notifications = await Promise.all(
+  const notifications = await NotificationLog.bulkCreate(
     members.map((member) => {
       const normalized = (member.phone || "").replace(/\s+/g, "").replace(/^\+/, "");
       const smsInfo = smsStatusMap[normalized];
@@ -131,7 +142,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
         status = "pending";
       }
 
-      return NotificationLog.create({
+      return {
         rootAdminId: req.scopeAdminId,
         memberId: member.id,
         createdByAdminId: req.user.id,
@@ -142,7 +153,7 @@ notificationRouter.post("/send", asyncHandler(async (req, res) => {
         providerMessageId,
         sentAt: now,
         errorMessage,
-      });
+      };
     })
   );
 

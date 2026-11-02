@@ -193,6 +193,9 @@ class ApiClient {
     );
   }
 
+  Future<List<dynamic>> getNotifiedMemberIds(String token) =>
+      _getList('/notifications/member-ids', token: token);
+
   Future<JsonMap> resendNotification(String token, String notificationId) {
     return _post('/notifications/$notificationId/resend', token: token);
   }

@@ -50,13 +50,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final api = ref.read(apiClientProvider);
     final results = await Future.wait<dynamic>([
       api.getMembers(token, pageSize: 1000),
-      api.getNotifications(token, pageSize: 1000),
+      api.getNotifiedMemberIds(token),
     ]);
 
     final members = results[0] as List<dynamic>;
     final sentMemberIds = (results[1] as List<dynamic>)
-        .whereType<Map<String, dynamic>>()
-        .map((item) => item['memberId'] as String?)
         .whereType<String>()
         .toSet();
 
@@ -777,7 +775,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
             child: TextField(
               controller: _titleController,
-              onChanged: (_) => setState(() {}),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -822,7 +819,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
             child: TextField(
               controller: _messageController,
-              onChanged: (_) => setState(() {}),
               maxLines: 3,
               style: const TextStyle(
                 fontSize: 13,

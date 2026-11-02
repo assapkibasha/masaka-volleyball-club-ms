@@ -45,6 +45,10 @@ function defineNotificationLog(sequelize) {
       type: DataTypes.UUID,
       allowNull: true,
     },
+  }, {
+    indexes: [
+      { name: "notification_logs_root_admin_id_created_at", fields: ["root_admin_id", "created_at"] },
+    ],
   });
 }
 

@@ -8,6 +8,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "check": "node --check src/server.js",
+    "test": "node --test test/sms-service.test.js",
     "cleanup:seeded-data": "node scripts/cleanup-seeded-data.js",
     "cleanup:all-except-account": "node scripts/cleanup-all-except-account.js",
     "import:players": "node scripts/import-players-to-account.js",
